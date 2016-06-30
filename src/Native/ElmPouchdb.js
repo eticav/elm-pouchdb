@@ -13,7 +13,7 @@ var _user$project$Native_ElmPouchdb = function() {
   function ctorBool(val){
     return val?{ ctor: 'True' }:{ ctor: 'False' };
   }
-  
+
   function ctorFailed(){
     ctor: 'Failed';
   }
@@ -147,11 +147,12 @@ var _user$project$Native_ElmPouchdb = function() {
   };
   
   function toChange(raw){
-    return { id: raw.id
-             , rev: toChangesRevs(raw.changes)
-             , doc: toChangesDoc(raw.doc)
-             , seq: raw.seq
-           };
+    return  { ctor: 'Changed', _0: { id: raw.id
+                                     , rev: toChangesRevs(raw.changes)
+                                     , doc: toChangesDoc(raw.doc)
+                                     , seq: raw.seq
+                                   }
+            };
   };
   
   function toError(raw){
@@ -159,7 +160,8 @@ var _user$project$Native_ElmPouchdb = function() {
   };
   
   function toComplete(raw){
-    return raw;
+    
+    return { ctor: 'Completed'};
   };
 
   function toSince(since){
@@ -170,7 +172,7 @@ var _user$project$Native_ElmPouchdb = function() {
   
   function toOptions(options)
   {
-    return {
+    return   {
       live : options.live
       , include_docs : options.include_docs
       , include_conflicts : options.include_conflicts
@@ -182,6 +184,7 @@ var _user$project$Native_ElmPouchdb = function() {
   
   function changes(db,options,toChangeTask,toCompleteTask,toErrorTask)
   {
+    //console.log(options);
     return nativeBinding(function(callback){
       
       function onChange(rawchange)

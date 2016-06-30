@@ -97,7 +97,7 @@ type alias DocChange = { id : String
                        }
 
 type ChangeEvent = Changed DocChange
-                  | Completed Value
+                  | Completed
                   | Error Value
 
 type alias SubId = String
@@ -119,7 +119,7 @@ subMap f (Change id db opt tagger) =
 
 type Since = Now
            | Seq Int
-         
+
 type alias ChangeOptions = { live: Bool
                            , include_docs: Bool
                            , include_conflicts: Bool
@@ -149,10 +149,10 @@ init =
   Task.succeed (State Dict.empty)
 
 
--- onEffects : Platform.Router msg msg ->
---             List (MySub msg) ->
---             {b|processes:Processes msg}->
---             Task x (State msg)
+onEffects : Platform.Router msg msg ->
+             List (MySub msg) ->
+             {b|processes:Processes msg}->
+             Task Never (State msg)
 onEffects router subs state =
   let
     allSubs = List.foldl subToTagger Dict.empty subs
@@ -194,9 +194,9 @@ spawnInList router inList idemList =
 
     (Change id db opt tagger)::rest ->
       Process.spawn (setChange (Change id db opt tagger)
-                                (sendToSelfChange router (Changed >> tagger))
-                                (sendToSelfChange router (Completed >> tagger))
-                                (sendToSelfChange router (Error >> tagger) ))
+                                (sendToSelfChange router tagger)
+                                (sendToSelfChange router tagger)
+                                (sendToSelfChange router tagger ))
               `Task.andThen` \pid ->
                 spawnInList router rest (insertIntoProcesses id pid tagger idemList)
 
@@ -217,9 +217,9 @@ onSelfMsg router msg state =
             `Task.andThen` \_ ->Task.succeed state
 
 setChange : MySub msg->
-            (Value->Task Never ()) ->
-            (Value->Task Never ()) ->
-            (Value->Task Never ()) ->
+            (ChangeEvent->Task Never ()) ->
+            (ChangeEvent->Task Never ()) ->
+            (ChangeEvent->Task Never ()) ->
             Task x Never
 setChange  (Change id db opt tagger)
            toChangeTask
@@ -231,8 +231,8 @@ setChange  (Change id db opt tagger)
         toErrorTask
 
 sendToSelfChange : Platform.Router msg msg
-                 -> (Value -> msg)
-                 -> Value
+                 -> (ChangeEvent -> msg)
+                 -> ChangeEvent
                  -> Task Never ()
-sendToSelfChange router ctor change =
-  Platform.sendToSelf router (ctor change)
+sendToSelfChange router tagger change =
+  Platform.sendToSelf router (tagger change)

@@ -78,7 +78,7 @@ type alias Model =
   , db : Pouchdb
   , date : Date
   , fail : Maybe DBError
-  , list : List Value
+  , list : List ChangeEvent
   }
 
 createPutTaskTest : String -> String -> Json.Encode.Value -> Pouchdb -> TaskTest
@@ -188,10 +188,7 @@ update msg model =
         (updatedModel, newCmd)
     Change changeMsg ->
       let 
-        updatedList = case changeMsg of
-                        Changed val -> val::model.list
-                        Completed val -> val::model.list
-                        Pouchdb.Error val -> val::model.list
+        updatedList = changeMsg::model.list
       in 
         ({model|list=updatedList}, Cmd.none)
   
@@ -199,7 +196,7 @@ view : Model -> Html Message
 view model =
   div
     [ ]
-    [ text "Testing PouchDB with el"
+    [ text "Testing PouchDB with elm"
     , text (toString (year model.date))
     , viewTasks model
     , viewChanges model]
@@ -230,7 +227,7 @@ viewChange change =
 
 subscriptions : Model -> Sub Message
 subscriptions model =
-  change "1" model.db { live = True
+  change "1" model.db { live = False
                       , include_docs = True
                       , include_conflicts = True
                       , attachments = False
