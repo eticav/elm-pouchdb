@@ -134,25 +134,54 @@ var _user$project$Native_ElmPouchdb = function() {
       });
     });
   }
-  
-  function toChange(rawchange){
-    return rawchange;
+
+  function toChangesRevs(raw){
+    return raw[0].rev;
+  };
+
+  function toChangesDoc(raw){
+    if (raw)
+      return Just(raw);
+    else
+      return Nothing;
   };
   
-  function toError(rawError){
-    return rawError;
+  function toChange(raw){
+    return { id: raw.id
+             , rev: toChangesRevs(raw.changes)
+             , doc: toChangesDoc(raw.doc)
+             , seq: raw.seq
+           };
   };
   
-  function toComplete(rawComplete){
-    return rawComplete;
+  function toError(raw){
+    return raw;
   };
   
-  function changes(db,options,toChangeTask,toCompleteTask,toErrorTask) {
-    var opt= { since: 'now'
-               , live: true
-               , include_docs: true
-             };
-    
+  function toComplete(raw){
+    return raw;
+  };
+
+  function toSince(since){
+    if ( since.ctor === 'Seq') {return since._0;}
+    return false;
+  }
+ 
+  
+  function toOptions(options)
+  {
+    return {
+      live : options.live
+      , include_docs : options.include_docs
+      , include_conflicts : options.include_conflicts
+      , attachments : options.attachments
+      , descending  : options.descending
+      , since : toSince(options.since)
+      , limit : getMaybeValue(options.limit,false)} ;
+  };
+  
+  function changes(db,options,toChangeTask,toCompleteTask,toErrorTask)
+  {
     return nativeBinding(function(callback){
       
       function onChange(rawchange)
@@ -160,28 +189,29 @@ var _user$project$Native_ElmPouchdb = function() {
         var change = toChange(rawchange);
 	var task = toChangeTask(change);
 	rawSpawn(task);
-      }
+      };
       
       function onError(rawError)
       {
 	var error = toError(rawError);
 	var task = toErrorTask(error);
 	rawSpawn(task);
-      }
+      };
 
       function onComplete(rawComplete)
       {
 	var error = toComplete(rawComplete);
 	var task = toCompleteTask(error);
 	rawSpawn(task);
-      }
+      };
       
-      var changes = db.changes(options)
+      var changes = db.changes(toOptions(options))
             .on('change', onChange)
             .on('complete', onComplete)
             .on('error', onError);
       
-      return function() {
+      return function()
+      {
         changes.cancel();
       };
     });

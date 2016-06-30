@@ -4,6 +4,7 @@ import Native.Pouchdb exposing (..)
 import Native.ElmPouchdb exposing (..)
 import Task exposing (Task,map)
 import Basics exposing (Never)
+import Process exposing (spawn,kill)
 
 import Json.Encode exposing (Value)
 import Platform.Sub exposing (Sub)
@@ -62,7 +63,6 @@ type alias FailGet = Fail
 type SuccessDestroy = Success
 type FailDestroy = Failed
 
-
 db : a -> Pouchdb
 db=
   Native.ElmPouchdb.db
@@ -90,7 +90,13 @@ get db req =
 
 -- EFFECT MANAGER
 
-type ChangeEvent = Changed Value
+type alias DocChange = { id : String
+                       , rev : String
+                       , doc : Maybe Value
+                       , seq : Int
+                       }
+
+type ChangeEvent = Changed DocChange
                   | Completed Value
                   | Error Value
 
@@ -101,6 +107,10 @@ type alias Tagger msg = ChangeEvent -> msg
 type MySub msg =
   Change SubId Pouchdb ChangeOptions (Tagger msg)
 
+change : SubId->Pouchdb->ChangeOptions->(Tagger msg)->Sub msg
+change id db opt tagger=
+       subscription ( Change id db opt tagger)
+  
 subMap :  (a -> b)
        -> MySub a
        -> MySub b
@@ -110,16 +120,23 @@ subMap f (Change id db opt tagger) =
 type Since = Now
            | Seq Int
          
-type alias ChangeOptions = { since: Since
-                           , live: Bool
+type alias ChangeOptions = { live: Bool
                            , include_docs: Bool
-                           }
+                           , include_conflicts: Bool
+                           , attachments: Bool
+                           , descending : Bool
+                           , since: Since
+                           , limit : Maybe Int }
+                           
+--, timeout : Int  --TODO not impletemented for testing purpose
+--, heartbeat: Int --TODO not impletemented for testing purpose
+                           
 
 -- EFFECT MANAGER
 
 type alias Process msg = { tagger : (Tagger msg)
                          , pid : Maybe Platform.ProcessId}
-                   
+                       
 type alias Processes msg =
   Dict.Dict SubId (Process msg)
 
@@ -132,11 +149,11 @@ init =
   Task.succeed (State Dict.empty)
 
 
-onEffects : Platform.Router msg ChangeEvent ->
-            List (MySub msg) ->
-            State msg ->
-            Task Never (State msg)
-onEffects router subs {processes} =
+-- onEffects : Platform.Router msg msg ->
+--             List (MySub msg) ->
+--             {b|processes:Processes msg}->
+--             Task x (State msg)
+onEffects router subs state =
   let
     allSubs = List.foldl subToTagger Dict.empty subs
     inFun _ sub (inList, idemList, outList) =
@@ -145,16 +162,19 @@ onEffects router subs {processes} =
       (inList, Dict.insert id x idemList, outList)
     outFun _ {pid} (inList,idemList,outList) =
       (inList,idemList, pid::outList)
+        
     (inList,idemList, outList) = Dict.merge
                                    inFun
                                    idemFun
                                    outFun
                                    allSubs
-                                   processes
+                                   state.processes
                                    ([], Dict.empty, [])
                                        
     inTasks = spawnInList router inList idemList
-    _=List.map (\x -> Native.Scheduler.kill x) outList
+    _=List.map (\x -> case x of
+                        Just pid ->Process.kill pid
+                        Nothing-> Task.succeed ()) outList
   in
     Task.map State inTasks
           
@@ -163,7 +183,7 @@ subToTagger (Change id db opt tagger) dict =
   Dict.insert id (Change id db opt tagger) dict
 
 
-spawnInList : Platform.Router msg ChangeEvent ->
+spawnInList : Platform.Router msg msg ->
               List (MySub msg) ->
               Processes msg->
               Task Never (Processes msg)
@@ -173,10 +193,10 @@ spawnInList router inList idemList =
       Task.succeed idemList
 
     (Change id db opt tagger)::rest ->
-      Native.Scheduler.spawn (setChange (Change id db opt tagger)
-                                (sendToSelfChange router  (Changed >> tagger) )
-                                (sendToSelfChange router  (Completed >> tagger) )
-                                (sendToSelfChange router  (Error >> tagger) ))
+      Process.spawn (setChange (Change id db opt tagger)
+                                (sendToSelfChange router (Changed >> tagger))
+                                (sendToSelfChange router (Completed >> tagger))
+                                (sendToSelfChange router (Error >> tagger) ))
               `Task.andThen` \pid ->
                 spawnInList router rest (insertIntoProcesses id pid tagger idemList)
 
@@ -188,12 +208,12 @@ insertIntoProcesses id pid tagger processes =
   in 
     Dict.insert id val processes
       
-onSelfMsg : Platform.Router msg ChangeEvent ->
+onSelfMsg : Platform.Router msg msg ->
             msg ->
             State msg ->
             Task Never (State msg)
-onSelfMsg router event state =
-  Platform.sendToApp router event
+onSelfMsg router msg state =
+  Platform.sendToApp router msg
             `Task.andThen` \_ ->Task.succeed state
 
 setChange : MySub msg->
@@ -205,15 +225,14 @@ setChange  (Change id db opt tagger)
            toChangeTask
            toCompleteTask
            toErrorTask =
-  Native.ElmPouchdb.change db opt
+  Native.ElmPouchdb.changes db opt
         toChangeTask
         toCompleteTask
-        toErrorTask 
+        toErrorTask
 
---sendToSelfChange : Platform.Router msg ChangeEvent ->
-  --                 (ChangeEvent -> msg)->
-    --               (Value->ChangeEvent)->
-      --             Value->
-        --           Task c ()
+sendToSelfChange : Platform.Router msg msg
+                 -> (Value -> msg)
+                 -> Value
+                 -> Task Never ()
 sendToSelfChange router ctor change =
-  Platform.sendToSelf router ctor
+  Platform.sendToSelf router (ctor change)

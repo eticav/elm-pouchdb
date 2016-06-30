@@ -3,7 +3,7 @@ module Main exposing (..)
 import Basics exposing (..)
 import ElmTest exposing (..)
 import Pouchdb exposing (..)
-import Json.Encode exposing (object, string)
+import Json.Encode exposing (object, string, Value)
 import Task exposing (Task,perform)
 import Html exposing (..)
 import Html.App as Html
@@ -78,8 +78,9 @@ type alias Model =
   , db : Pouchdb
   , date : Date
   , fail : Maybe DBError
+  , list : List Value
   }
-                 
+
 createPutTaskTest : String -> String -> Json.Encode.Value -> Pouchdb -> TaskTest
 createPutTaskTest id description object db =
   createPutUpdateTaskTest id description object Maybe.Nothing db 
@@ -129,16 +130,15 @@ initTasks db =
                "2"
                "put simple doc"
                ( Json.Encode.object
-                   [ ("_id",string "1518")
+                   [ ("_id",string "1718")
                    , ("val",string "hello")
-                   , ("_rev",string "2-600ee969df8ecafe81cb48f338191bde")
                    ]
                )
                db
            , createGetTaskTest
                "3"
                "Get simple doc"
-               (let req = Pouchdb.request "1518" in {req|revs=Just True, rev=Just "2-600ee969df8ecafe81cb48f338191bd"})
+               (let req = Pouchdb.request "1718" in {req|revs=Just True})
                db
            -- , createDestroyTaskTest
            --     "3"
@@ -156,7 +156,8 @@ initialModel =
     { tasks = initTasks db
     , db = db
     , date =Date.fromTime(0)
-    , fail = Maybe.Nothing }
+    , fail = Maybe.Nothing
+    , list =[]}
 
 updateTaskAt : Int->TaskResult->Model->Model
 updateTaskAt index result model =
@@ -186,15 +187,22 @@ update msg model =
       in
         (updatedModel, newCmd)
     Change changeMsg ->
-      (model, Cmd.none)
+      let 
+        updatedList = case changeMsg of
+                        Changed val -> val::model.list
+                        Completed val -> val::model.list
+                        Pouchdb.Error val -> val::model.list
+      in 
+        ({model|list=updatedList}, Cmd.none)
   
 view : Model -> Html Message
 view model =
   div
     [ ]
-    [ text "Testing PouchDB with elm"
+    [ text "Testing PouchDB with el"
     , text (toString (year model.date))
-    , viewTasks model ]
+    , viewTasks model
+    , viewChanges model]
 
 viewTasks model =
   div
@@ -208,11 +216,32 @@ viewTask task =
     , span [][text (task.description)]
     , span [][text (toString task.result)]]
 
+
+viewChanges model =
+  div
+    []
+    (List.map viewChange model.list)
   
+viewChange change =
+  div
+    []
+    [text (toString change)]
+  
+
+subscriptions : Model -> Sub Message
+subscriptions model =
+  change "1" model.db { live = True
+                      , include_docs = True
+                      , include_conflicts = True
+                      , attachments = False
+                      , descending  = False
+                      , since = Now
+                      , limit  = Nothing } Change
+
 main =  
   Html.program
-    { init = init
-    , update = update
-    , view = view
-    , subscriptions = \_ -> Sub.none
-    }
+        { init = init
+        , update = update
+        , view = view
+        , subscriptions = subscriptions
+        }
