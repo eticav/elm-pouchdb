@@ -14,17 +14,99 @@ type Pouchdb = Pouchdb
 
 -- TYPE DECLARATION
 
-type alias DocRequest = { id: String
-                        , rev: Maybe String
+type alias DocId = String
+type alias RevId = String
+                 
+
+type alias DocRequest = { id: DocId
+                        , rev: Maybe RevId
                         , revs: Maybe Bool
+                        , conflicts : Maybe Bool
                         , attachments : Maybe Bool
                         , binary: Maybe Bool
                         }
 
-request : String -> DocRequest
+type alias AllDocsRequest = { include_docs : Maybe Bool
+                            , conflicts : Maybe Bool
+                            , attachments : Maybe  Bool
+                            , startkey : Maybe DocId
+                            , endkey : Maybe DocId
+                            , inclusive_end : Maybe Bool
+                            , limit : Maybe Int
+                            , skip : Maybe Int
+                            , descending : Maybe Bool
+                            , key : Maybe DocId
+                            , keys : Maybe (List DocId)
+                            }
+
+
+type  JSFun = MapReduce String
+            | Map String
+            | ViewName String
+
+type Reduce = Sum
+            | Count
+            | Stats
+            | Fun Value
+
+type Stale = Ok
+           | UpdateAfter
+            
+                          
+type alias QueryRequest = { fun : JSFun
+                          , reduce : Maybe Reduce
+                          , include_docs : Maybe Bool
+                          , conflicts : Maybe Bool
+                          , attachments : Maybe  Bool
+                          , startkey : Maybe DocId
+                          , endkey : Maybe DocId
+                          , inclusive_end : Maybe Bool
+                          , limit : Maybe Int
+                          , skip : Maybe Int
+                          , descending : Maybe Bool
+                          , groupLevel : Maybe Int               
+                          , key : Maybe DocId
+                          , keys : Maybe (List DocId)
+                          , stale : Maybe Stale
+                          }
+                        
+queryRequest : JSFun -> QueryRequest
+queryRequest fun = { fun = fun
+                   , reduce = Maybe.Nothing
+                   , include_docs = Maybe.Nothing
+                   , conflicts = Maybe.Nothing
+                   , attachments = Maybe.Nothing
+                   , startkey = Maybe.Nothing
+                   , endkey = Maybe.Nothing
+                   , inclusive_end = Maybe.Nothing
+                   , limit = Maybe.Nothing
+                   , skip = Maybe.Nothing
+                   , descending = Maybe.Nothing
+                   , groupLevel = Maybe.Nothing
+                   , key = Maybe.Nothing
+                   , keys = Maybe.Nothing
+                   , stale = Maybe.Nothing
+                   }
+  
+allDocsRequest :  AllDocsRequest
+allDocsRequest = { include_docs = Maybe.Nothing
+                 , conflicts = Maybe.Nothing
+                 , attachments = Maybe.Nothing
+                 , startkey = Maybe.Nothing
+                 , endkey = Maybe.Nothing
+                 , inclusive_end = Maybe.Nothing
+                 , limit = Maybe.Nothing
+                 , skip = Maybe.Nothing
+                 , descending = Maybe.Nothing
+                 , key = Maybe.Nothing
+                 , keys = Maybe.Nothing
+                 }
+
+request : DocId -> DocRequest
 request id = { id = id
              , rev = Maybe.Nothing
              , revs = Maybe.Nothing
+             , conflicts = Maybe.Nothing
              , attachments = Maybe.Nothing
              , binary = Maybe.Nothing
              }
@@ -36,13 +118,13 @@ type alias Fail = { status: Int
                   , message: String
                   }
                   
-type alias SuccessPut = { id: String
-                        , rev: String
+type alias SuccessPut = { id: DocId
+                        , rev: RevId
                         }
 type alias FailPut = Fail
 
-type alias SuccessPost = { id: String
-                         , rev: String
+type alias SuccessPost = { id: DocId
+                         , rev: RevId
                          }
 type alias FailPost = Fail
 
@@ -51,14 +133,26 @@ type alias SuccessRemove = SuccessPut
 type alias FailRemove = FailPut
 
 type alias Revision = { sequence : Int
-                      , uuid  : String }
+                      , uuid  : RevId }
 
-type alias SuccessGet = { response : Value
-                        , conflicts : Maybe Value
-                        , revisions : Maybe (List Revision)
-                        }
+type alias DocResult = { id: DocId
+                       , rev: Maybe RevId
+                       , doc : Maybe Value
+                       , revisions : Maybe (List Revision)
+                       , conflicts : Maybe Value
+                       , sequence : Maybe Int
+                       , key : Maybe Value
+                       }
 
 type alias FailGet = Fail
+                   
+type alias SuccessGetAllDocs = { offset : Bool
+                               , totalRows : Int
+                               , docs : List DocResult
+                               }
+      
+type alias FailGetAllDocs = Fail
+
 
 type SuccessDestroy = Success
 type FailDestroy = Failed
@@ -79,24 +173,25 @@ post : Pouchdb -> Value -> Task FailPost SuccessPost
 post =
   Native.ElmPouchdb.post 
   
-remove : Pouchdb -> String -> Maybe String-> Task FailRemove SuccessRemove
+remove : Pouchdb -> DocId -> RevId-> Task FailRemove SuccessRemove
 remove db id rev=
-  Native.ElmPouchdb.removeById db id rev
+  Native.ElmPouchdb.removeById db id (Just rev)
   
-get : Pouchdb -> DocRequest -> Task FailGet SuccessGet
+get : Pouchdb -> DocRequest -> Task FailGet DocResult
 get db req =
   Native.ElmPouchdb.get db req
 
+allDocs : Pouchdb -> AllDocsRequest -> Task FailGetAllDocs SuccessGetAllDocs
+allDocs db req =
+  Native.ElmPouchdb.allDocs db req
 
+query : Pouchdb -> QueryRequest -> Task FailGetAllDocs SuccessGetAllDocs
+query db req =
+  --Debug.log (toString req)
+  Native.ElmPouchdb.query db req
 -- EFFECT MANAGER
 
-type alias DocChange = { id : String
-                       , rev : String
-                       , doc : Maybe Value
-                       , seq : Int
-                       }
-
-type ChangeEvent = Changed DocChange
+type ChangeEvent = Changed DocResult
                   | Completed
                   | Error Value
 

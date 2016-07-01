@@ -55,12 +55,16 @@ init =
     (model, x)
 
 type DBSuccess = Put Pouchdb.SuccessPut
-               | Get Pouchdb.SuccessGet
+               | Get Pouchdb.DocResult
+               | GetAllDocs Pouchdb.SuccessGetAllDocs
+               | Query Pouchdb.SuccessGetAllDocs
                | Remove Pouchdb.SuccessRemove
                | Destroy Pouchdb.SuccessDestroy
                  
 type DBError = ErrPut Pouchdb.FailPut
              | ErrGet Pouchdb.FailGet
+             | ErrGetAllDocs Pouchdb.FailGetAllDocs
+             | ErrQuery Pouchdb.FailGetAllDocs
              | ErrRemove Pouchdb.FailRemove
              | ErrDestroy Pouchdb.FailDestroy
                
@@ -104,6 +108,24 @@ createGetTaskTest id description req db =
   in
    TaskTest id description task3 Maybe.Nothing
 
+createAllDocsTaskTest : String -> String -> AllDocsRequest -> Pouchdb -> TaskTest
+createAllDocsTaskTest id description req db =
+  let
+    task = (Pouchdb.allDocs db req)
+    task2 = Task.mapError ErrGetAllDocs task
+    task3 = Task.map GetAllDocs task2
+  in
+   TaskTest id description task3 Maybe.Nothing
+
+createQueryTaskTest : String -> String -> QueryRequest -> Pouchdb -> TaskTest
+createQueryTaskTest id description req db =
+  let
+    task = (Pouchdb.query db req)
+    task2 = Task.mapError ErrQuery task
+    task3 = Task.map Query task2
+  in
+   TaskTest id description task3 Maybe.Nothing
+   
 createDestroyTaskTest : String -> String -> Pouchdb -> TaskTest
 createDestroyTaskTest id description db =
   let
@@ -140,9 +162,17 @@ initTasks db =
                "Get simple doc"
                (let req = Pouchdb.request "1718" in {req|revs=Just True})
                db
+           , createAllDocsTaskTest
+               "4"
+               "Alls Docs"
+               (let req = Pouchdb.allDocsRequest in {req|keys=Just ["1518","1718"], include_docs=Just True}) db
+           , createQueryTaskTest
+               "5"
+               "Alls Docsxc<wx<w"
+               (let req = Pouchdb.queryRequest (Map "{console.log(doc);emit([doc.val,1,'ddd'])};//hello") in {req|include_docs=Just True}) db
            -- , createDestroyTaskTest
-           --     "3"
-           --     "Get simple doc"
+           --     "1000"
+           --     "Delete database"
            --     db
            ]
   in
@@ -227,7 +257,7 @@ viewChange change =
 
 subscriptions : Model -> Sub Message
 subscriptions model =
-  change "1" model.db { live = False
+  change "1" model.db { live = True
                       , include_docs = True
                       , include_conflicts = True
                       , attachments = False
