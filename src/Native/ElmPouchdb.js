@@ -29,7 +29,8 @@ var _user$project$Native_ElmPouchdb = function() {
     return {
       status: error.status,
       name: error.name,
-      message: error.message
+      message: error.message,
+      reason: error.reason
     };
   }
   
@@ -38,10 +39,69 @@ var _user$project$Native_ElmPouchdb = function() {
              , rev: response.rev
            };
   }
+ 
+  function setAjax(src,target){
+    if( src.ctor ==='Just'){
+      target.ajax={};
+      if (src._0.cache.ctor==='Just'){
+        target.ajax.cache=src._0.cache._0;
+      }
+      if (src._0.headers.ctor==='Just'){
+        target.ajax.headers=src._0.headers._0;
+      }
+      if (src._0.withCredentials.ctor==='Just'){
+        target.ajax.withCredentials=src._0.withCredentials._0;
+      }
+    }
+  }
+
+  function setAdapter(src,target){
+    if( src.ctor ==='Idb'){
+      target.adapter= 'idb';
+    }
+    if( src.ctor ==='LevelDb'){
+      target.adapter= 'leveldb';
+    }
+    if( src.ctor ==='WebSql'){
+      target.adapter= 'websql';
+    }
+    if( src.ctor ==='Http'){
+      target.adapter= 'http';
+    }
+  }
   
-  function db(name)
-  {
-    var rv = new PouchDB(name);
+  function setMaybe(src, target, attr){
+    if (src.ctor ==='Just') {
+      target[attr]=src._0;
+    }
+  }
+  
+  function setMaybeComposed(src, target, composition, attr){
+    if (src.ctor ==='Just') {
+      if (target[composition] === undefined){
+        target[composition] = {};
+      }
+      target[composition][attr]=src._0;
+    }
+  }
+
+  function toDbOptions(opt){
+    let options = {};
+    setMaybe (opt.auto_compaction,options, 'auto_compaction');
+    setAdapter(opt,opt.adaptor);
+    setMaybe(opt.revs_limit,options,'revs_limit');
+    setMaybeComposed(opt.username,options,'auth','username');
+    setMaybeComposed(opt.password,options,'auth','password');
+    setMaybeComposed(opt.cache,options,'ajax','cache');
+    setMaybeComposed(opt.headers,options,'ajax','headers');
+    setMaybeComposed(opt.withCredentials,options,'ajax','withCredentials');
+    setMaybe(opt.skip_setup,options, 'skip_setup');
+    return options;
+  }
+  
+  function db(name,opt){
+    let options = toDbOptions(opt);
+    var rv = new PouchDB(name,options);
     //rv.on('error', function (err) { debugger; });
     return rv;
   };
@@ -87,15 +147,17 @@ var _user$project$Native_ElmPouchdb = function() {
     returnVal.docs=EmptyList;
     for (var docRef in response.rows){
       var respDoc=response.rows[docRef];
-      var doc = { id : respDoc.id
-                  , rev : Just(respDoc.value.rev)
-                  , doc : (respDoc.doc)?Just(respDoc.doc):Nothing
-                  , revisions : Nothing
-                  , conflicts : Nothing
-                  , sequence : Nothing
-                  , key : Nothing
-                };
-      returnVal.docs = Cons(doc,returnVal.docs);
+      if (respDoc.error===undefined){
+        var doc = { id : respDoc.id
+                    , rev : Just(respDoc.value.rev)
+                    , doc : (respDoc.doc)?Just(respDoc.doc):Nothing
+                    , revisions : Nothing
+                    , conflicts : Nothing
+                    , sequence : Nothing
+                    , key : Nothing
+                  };
+        returnVal.docs = Cons(doc,returnVal.docs);
+      }
     }
     return returnVal;  
   }
@@ -170,15 +232,19 @@ var _user$project$Native_ElmPouchdb = function() {
     put(db,deletedDoc,rev);
   };
 
+  function toGetOptions(req){
+    var options= { };
+    setMaybe(req.rev,options,'rev');
+    setMaybe(req.revs,options,'revs');
+    setMaybe(req.conflicts,options,'conflicts');
+    setMaybe(req.attachments,options,'attachments');
+    setMaybe(req.binary,options,'binary');
+    return options;
+  }
+  
   function get(db,req) {
     var id = req.id;
-    var options= { rev: getMaybeValue(req.rev,false)
-                   , revs: getMaybeValue(req.revs,false)
-                   , conflicts:getMaybeValue(req.conflicts,true)
-                   , attachments : getMaybeValue(req.attachments,false)
-                   , binary: getMaybeValue(req.binary,false)
-                 };
-    
+    let options = toGetOptions(req);
     return nativeBinding(function(callback){
       db.get(id, options,function(err, doc) {
         if (err) { return callback(fail(toFail(err))); }
@@ -195,9 +261,11 @@ var _user$project$Native_ElmPouchdb = function() {
       include_docs : getMaybeValue(req.include_docs,false)
       , conflicts : getMaybeValue(req.conflicts,false)
       , attachments : getMaybeValue(req.attachments,false)
-      , skip : getMaybeValue(req.skip,false)
       , descending : getMaybeValue(req.descending,false)
     };
+    if (getMaybeValue(req.skip,false)) {
+      options.skip=getMaybeValue(req.skip,false);
+    }
     if (!anyKeys) {
       let startkey=getMaybeValue(req.startkey,false);
       let endkey=getMaybeValue(req.endkey,false);
@@ -273,10 +341,13 @@ var _user$project$Native_ElmPouchdb = function() {
       include_docs : getMaybeValue(opt.include_docs,false)
       , conflicts : getMaybeValue(opt.conflicts,false)
       , attachments : getMaybeValue(opt.attachments,false)
-      , skip : getMaybeValue(opt.skip,false)
       , descending : getMaybeValue(opt.descending,false)
       
     };
+    
+    if (getMaybeValue(opt.skip,false)) {
+      options.skip=getMaybeValue(opt.skip,false);
+    }
     let stale = getStale(opt.stale);
     if (stale) {
       options.stale = stale;
@@ -315,96 +386,7 @@ var _user$project$Native_ElmPouchdb = function() {
     });
   }
   
-  function toChangesRevs(raw){
-    return raw[0].rev;
-  };
-
-  function toChangesDoc(raw){
-    if (raw)
-      return Just(raw);
-    else
-      return Nothing;
-  };
-  
-  function toChange(raw){
-    return  { ctor: 'Changed'
-              , _0: { id: raw.id
-                      , rev: Just(toChangesRevs(raw.changes))
-                      , doc: toChangesDoc(raw.doc)
-                      , revisions : Nothing
-                      , conflicts : Nothing
-                      , sequence: Just(raw.seq)
-                      , key : Nothing
-                    }
-            };
-  };
-  
-  function toError(raw){
-    return raw;
-  };
-  
-  function toComplete(raw){
-    
-    return { ctor: 'Completed'};
-  };
-
-  function toSince(since){
-    if ( since.ctor === 'Seq') {return since._0;}
-    return false;
-  }
- 
-  
-  function toOptions(options)
-  {
-    return   {
-      live : options.live
-      , include_docs : options.include_docs
-      , include_conflicts : options.include_conflicts
-      , attachments : options.attachments
-      , descending  : options.descending
-      , since : toSince(options.since)
-      , limit : getMaybeValue(options.limit,false)} ;
-  };
-  
-  function changes(db,options,toChangeTask,toCompleteTask,toErrorTask)
-  {
-    //console.log(options);
-    return nativeBinding(function(callback){
-      
-      function onChange(rawchange)
-      {
-        var change = toChange(rawchange);
-	var task = toChangeTask(change);
-	rawSpawn(task);
-      };
-      
-      function onError(rawError)
-      {
-	var error = toError(rawError);
-	var task = toErrorTask(error);
-	rawSpawn(task);
-      };
-
-      function onComplete(rawComplete)
-      {
-	var error = toComplete(rawComplete);
-	var task = toCompleteTask(error);
-	rawSpawn(task);
-      };
-      
-      var changes = db.changes(toOptions(options))
-            .on('change', onChange)
-            .on('complete', onComplete)
-            .on('error', onError);
-      
-      return function()
-      {
-        changes.cancel();
-      };
-    });
-  };
-  
-  return { db: db
+  return { db: F2(db)
            , destroy: destroy
            , get: F2(get)
            , allDocs: F2(allDocs)
@@ -413,7 +395,6 @@ var _user$project$Native_ElmPouchdb = function() {
            , post: F2(post)
            , remove:F3(remove)
            , removeById: F3(remove)
-           , changes: F5(changes)
          };
   
 }();

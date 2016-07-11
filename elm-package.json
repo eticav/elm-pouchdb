@@ -4,10 +4,11 @@
     "repository": "https://github.com/user/project.git",
     "license": "BSD3",
     "source-directories": [
-      , "./src/"
+      "./src/"
+      , "./src/Native/"
     ],
   "exposed-modules":[
-    "Pouchdb"
+   
   ],
    "native-modules": true,
     "dependencies": {
@@ -15,3 +16,5 @@
     },
     "elm-version": "0.17.0 <= v < 0.18.0"
 }
+
+

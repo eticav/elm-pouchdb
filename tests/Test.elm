@@ -3,6 +3,9 @@ module Main exposing (..)
 import Basics exposing (..)
 import ElmTest exposing (..)
 import Pouchdb exposing (..)
+import Change
+import Replicate
+import Sync
 import Json.Encode exposing (object, string, Value)
 import Task exposing (Task,perform)
 import Html exposing (..)
@@ -58,14 +61,14 @@ type DBSuccess = Put Pouchdb.SuccessPut
                | Get Pouchdb.DocResult
                | GetAllDocs Pouchdb.SuccessGetAllDocs
                | Query Pouchdb.SuccessGetAllDocs
-               | Remove Pouchdb.SuccessRemove
+               | Remove Pouchdb.SuccessPut
                | Destroy Pouchdb.SuccessDestroy
                  
-type DBError = ErrPut Pouchdb.FailPut
-             | ErrGet Pouchdb.FailGet
-             | ErrGetAllDocs Pouchdb.FailGetAllDocs
-             | ErrQuery Pouchdb.FailGetAllDocs
-             | ErrRemove Pouchdb.FailRemove
+type DBError = ErrPut Pouchdb.Fail
+             | ErrGet Pouchdb.Fail
+             | ErrGetAllDocs Pouchdb.Fail
+             | ErrQuery Pouchdb.Fail
+             | ErrRemove Pouchdb.Fail
              | ErrDestroy Pouchdb.FailDestroy
                
 type TaskResult = Ok DBSuccess
@@ -74,15 +77,17 @@ type TaskResult = Ok DBSuccess
 type Message = Success Int DBSuccess
              | Error Int DBError
              | Hello Date
-             | Change Pouchdb.ChangeEvent
+             | Change Change.ChangeEvent
+             | Replicate Replicate.ReplicateEvent 
 
 type alias Model =
   {
     tasks : List TaskTest
   , db : Pouchdb
+  , remote : Pouchdb
   , date : Date
   , fail : Maybe DBError
-  , list : List ChangeEvent
+  , list : List Change.ChangeEvent
   }
 
 createPutTaskTest : String -> String -> Json.Encode.Value -> Pouchdb -> TaskTest
@@ -152,7 +157,7 @@ initTasks db =
                "2"
                "put simple doc"
                ( Json.Encode.object
-                   [ ("_id",string "1718")
+                   [ ("_id",string "1818")
                    , ("val",string "hello")
                    ]
                )
@@ -160,7 +165,7 @@ initTasks db =
            , createGetTaskTest
                "3"
                "Get simple doc"
-               (let req = Pouchdb.request "1718" in {req|revs=Just True})
+               (Pouchdb.request "1518" Nothing |> revs True)
                db
            , createAllDocsTaskTest
                "4"
@@ -168,12 +173,12 @@ initTasks db =
                (let req = Pouchdb.allDocsRequest in {req|keys=Just ["1518","1718"], include_docs=Just True}) db
            , createQueryTaskTest
                "5"
-               "Alls Docsxc<wx<w"
-               (let req = Pouchdb.queryRequest (Map "{console.log(doc);emit([doc.val,1,'ddd'])};//hello") in {req|include_docs=Just True}) db
-           -- , createDestroyTaskTest
-           --     "1000"
-           --     "Delete database"
-           --     db
+               "Alls Docs : "
+               (let req = Pouchdb.queryRequest (Map "{console.log(doc);emit([doc.val,1,'ddd']);};") in {req|include_docs=Just True}) db
+            -- createDestroyTaskTest
+            --    "1000"
+            --    "Delete database"
+            --    db
            ]
   in
      list
@@ -181,10 +186,15 @@ initTasks db =
 initialModel : Model
 initialModel =
   let
-    db = Pouchdb.db "DB-Test"
+    db = Pouchdb.db "DB-Test" Pouchdb.dbOptions
+    remote = Pouchdb.db "https://etiennecavard.cloudant.com/db-test"
+             (Pouchdb.dbOptions
+             |> auth "etiennecavard" "TGwF51P6K5TvXtg62mBt"
+             |> ajaxCache True)
   in 
-    { tasks = initTasks db
+    { tasks = initTasks db 
     , db = db
+    , remote = remote
     , date =Date.fromTime(0)
     , fail = Maybe.Nothing
     , list =[]}
@@ -221,6 +231,9 @@ update msg model =
         updatedList = changeMsg::model.list
       in 
         ({model|list=updatedList}, Cmd.none)
+
+    Replicate replicateMsg ->
+        (model, Cmd.none)
   
 view : Model -> Html Message
 view model =
@@ -243,7 +256,6 @@ viewTask task =
     , span [][text (task.description)]
     , span [][text (toString task.result)]]
 
-
 viewChanges model =
   div
     []
@@ -254,17 +266,29 @@ viewChange change =
     []
     [text (toString change)]
   
-
 subscriptions : Model -> Sub Message
 subscriptions model =
-  change "1" model.db { live = True
-                      , include_docs = True
-                      , include_conflicts = True
-                      , attachments = False
-                      , descending  = False
-                      , since = Now
-                      , limit  = Nothing } Change
-
+  let
+    change = Change.new "1" model.db { live = True
+                                     , include_docs = True
+                                     , include_conflicts = True
+                                     , attachments = False
+                                     , descending  = False
+                                     , since = Change.Now
+                                     , limit  = Nothing } Change
+             
+    replicateOptions = Replicate.defaultOptions
+                       
+    -- replication = Replicate.new "2" model.db model.remote
+    --               {replicateOptions | since = Replicate.Seq 0}
+    --                 Replicate
+    sync = Sync.new "2" model.db model.remote
+           replicateOptions
+           replicateOptions
+           Replicate
+    
+  in
+    Sub.batch [change, sync]
 main =  
   Html.program
         { init = init
