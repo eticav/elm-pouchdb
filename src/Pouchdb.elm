@@ -30,7 +30,7 @@ module Pouchdb exposing ( JSFun(ViewName, Map, MapReduce)
                         , revsLimit
                         , autoCompaction
                         , ajaxWithCredentials
-                        , ajaxHeadesr
+                        , ajaxHeaders
                         -- helpers
                         , revs
                         , conflicts
