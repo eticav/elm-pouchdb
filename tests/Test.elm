@@ -170,7 +170,12 @@ initTasks db =
            , createAllDocsTaskTest
                "4"
                "Alls Docs"
-               (let req = Pouchdb.allDocsRequest in {req|keys=Just ["1518","1718"], include_docs=Just True}) db
+               (Pouchdb.allDocsRequest
+               |> startkey "1518"
+               |> endkey "1818"
+               |> include_docs True
+               |> limit 1
+               |> inclusive_end True) db
            , createQueryTaskTest
                "5"
                "Alls Docs : "

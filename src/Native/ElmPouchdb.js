@@ -20,11 +20,6 @@ var _user$project$Native_ElmPouchdb = function() {
     ctor: 'Failed';
   }
   
-  function getMaybeValue(val,d){
-    if ( val.ctor === 'Just') {return val._0;}
-    return d;
-  }
-  
   function toFail(error){
     return {
       status: error.status,
@@ -73,6 +68,8 @@ var _user$project$Native_ElmPouchdb = function() {
   function setMaybe(src, target, attr){
     if (src.ctor ==='Just') {
       target[attr]=src._0;
+    } else {
+      target[attr]=undefined;
     }
   }
   
@@ -102,7 +99,6 @@ var _user$project$Native_ElmPouchdb = function() {
   function db(name,opt){
     let options = toDbOptions(opt);
     var rv = new PouchDB(name,options);
-    //rv.on('error', function (err) { debugger; });
     return rv;
   };
 
@@ -139,9 +135,7 @@ var _user$project$Native_ElmPouchdb = function() {
   }
 
   function toSuccessAllDocs(response) {
-    // returns SuccessGetAllDocs
     let returnVal = {};
-    //return response;
     returnVal.offset=response.offset;
     returnVal.totalRows=response.total_rows;
     returnVal.docs=EmptyList;
@@ -163,9 +157,7 @@ var _user$project$Native_ElmPouchdb = function() {
   }
 
   function toSuccessQuery(response) {
-    // returns SuccessGetAllDocs
     let returnVal = {};
-    //return response;
     returnVal.offset=response.offset;
     returnVal.totalRows=response.total_rows;
     returnVal.docs=EmptyList;
@@ -253,37 +245,27 @@ var _user$project$Native_ElmPouchdb = function() {
     });
   }
 
+  function toAllDocsOptions(req){
+    var options = {};
+    setMaybe(req.include_docs,options,'include_docs');
+    setMaybe(req.conflicts,options,'conflicts');
+    setMaybe(req.attachments,options,'attachments');
+    setMaybe(req.descending,options,'descending');
+    setMaybe(req.skip,options,'skip');
+    setMaybe(req.startkey,options,'startkey');
+    setMaybe(req.endkey,options,'endkey');
+    setMaybe(req.inclusive_end,options,'inclusive_end');
+    setMaybe(req.limit,options,'limit');
+    setMaybe(req.key,options,'key');
+    setMaybe(req.keys,options,'keys');
+    if (options.keys) {
+      options.keys = toArray(options.keys);
+    }
+    return options;
+  }
+  
   function allDocs(db,req) {
-    let key = getMaybeValue(req.key,false);
-    let keys = !(getMaybeValue(req.keys,false)===false);
-    let anyKeys = keys || key;
-    let options= {
-      include_docs : getMaybeValue(req.include_docs,false)
-      , conflicts : getMaybeValue(req.conflicts,false)
-      , attachments : getMaybeValue(req.attachments,false)
-      , descending : getMaybeValue(req.descending,false)
-    };
-    if (getMaybeValue(req.skip,false)) {
-      options.skip=getMaybeValue(req.skip,false);
-    }
-    if (!anyKeys) {
-      let startkey=getMaybeValue(req.startkey,false);
-      let endkey=getMaybeValue(req.endkey,false);
-      if (startkey) {
-        options.startkey = startkey;
-      }
-      if (endkey) {
-        options.endkey = endkey;
-      }
-      options.inclusive_end = getMaybeValue(req.inclusive_end,false);
-      options.limit = getMaybeValue(req.limit,false);
-    }
-    if (key) {
-      options.key = getMaybeValue(req.key,undefined);
-    } else if (keys) {
-      options.keys = toArray(req.keys._0);
-    }
-    console.log(options);
+    let options = toAllDocsOptions(req);
     return nativeBinding(function(callback){
       db.allDocs(options,function(err, docs) {
         if (err) { return callback(fail(toFail(err))); }
@@ -292,28 +274,35 @@ var _user$project$Native_ElmPouchdb = function() {
     });
   }
 
-  function getStale(stale){
+  function setStale(stale,options){
+    options.stale=undefined;
     if ( stale.ctor === 'Just') {
       switch (stale.ctor) {
-      case 'Ok': 
-        return 'ok';
-      case 'UpdateAfter': 
-        return 'update_after';
+      case 'Ok':
+        options.stale= 'ok';
+        break;
+      case 'UpdateAfter':
+        options.stale= 'update_after';
+        break;
       }
-    }
-    return false;
+    } 
+    return options;
   }
   
-  function getReduce(reduce){
+  function setReduce(reduce,options){
+    options.reduce=undefined;
     switch (reduce.ctor) {
     case 'Sum': 
-      return '_sum';
+      options.reduce='_sum';
+      break;
     case 'Counts': 
-      return '_counts';
+      options.reduce='_counts';
+      break;
     case 'Stats': 
-      return '_stats';
+      options.reduce='_stats';
+      break;
     }
-    return false;
+    return options;
   }
 
   function getFun(fun){
@@ -331,53 +320,33 @@ var _user$project$Native_ElmPouchdb = function() {
       }
     return returnValue;
   };
+
+  function setGroupLevel(group_level, options){
+    options.group=undefined;
+    setMaybe(group_level,options,'group_level');
+    if (options.group_level){
+      options.group=true;
+    }
+  }
   
   function query(db,opt) {
     let fun = getFun(opt.fun);
-    let key = getMaybeValue(opt.key,false);
-    let keys = !(getMaybeValue(opt.keys,false)===false);
-    let anyKeys = keys || key;
-    let options= {
-      include_docs : getMaybeValue(opt.include_docs,false)
-      , conflicts : getMaybeValue(opt.conflicts,false)
-      , attachments : getMaybeValue(opt.attachments,false)
-      , descending : getMaybeValue(opt.descending,false)
-      
-    };
-    
-    if (getMaybeValue(opt.skip,false)) {
-      options.skip=getMaybeValue(opt.skip,false);
-    }
-    let stale = getStale(opt.stale);
-    if (stale) {
-      options.stale = stale;
-    }
-    let reduce = getReduce(opt.reduce);
-    if (reduce) {
-      options.reduce = reduce;
-    }
-    if (getMaybeValue(opt.groupLevel,false)){
-      options.group = true;
-      options.group_level = getMaybeValue(opt.groupLevel,false);
-    }
-    if (!anyKeys) {
-      let startkey=getMaybeValue(opt.startkey,false);
-      let endkey=getMaybeValue(opt.endkey,false);
-      if (startkey) {
-        options.startkey = startkey;
-      }
-      if (endkey) {
-        options.endkey = endkey;
-      }
-      options.inclusive_end = getMaybeValue(opt.inclusive_end,false);
-      options.limit = getMaybeValue(opt.limit,false);
-    }
-    if (key) {
-      options.key = key;
-    } else if (keys) {
-      options.keys = toArray(opt.keys._0);
-    }
-    console.log(options);
+    let options = {};
+    setMaybe(opt.include_docs,options,'include_docs');
+    setMaybe(opt.conflicts,options,'conflicts');
+    setMaybe(opt.attachments,options,'attachments');
+    setMaybe(opt.descending,options,'descending');
+    setMaybe(opt.skip,options,'skip');
+    setMaybe(opt.startkey,options,'startkey');
+    setMaybe(opt.endkey,options,'endkey');
+    setMaybe(opt.inclusive_end,options,'inclusive_end');
+    setMaybe(opt.limit,options,'limit');
+    setMaybe(opt.key,options,'key');
+    setMaybe(opt.keys,options,'keys');
+    setStale(opt.stale,options);
+    setReduce(opt.reduce,options);
+    setGroupLevel(opt.groupLevel,options);
+   
     return nativeBinding(function(callback){
       db.query(fun,options,function(err, docs) {
         if (err) { return callback(fail(toFail(err))); }
@@ -396,5 +365,4 @@ var _user$project$Native_ElmPouchdb = function() {
            , remove:F3(remove)
            , removeById: F3(remove)
          };
-  
 }();
