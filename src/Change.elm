@@ -23,13 +23,13 @@ import Json.Encode exposing (Value)
 import Platform.Sub exposing (Sub)
 
 import GenEffect exposing (..)
-import Pouchdb exposing (Pouchdb,DocResult)
+import Pouchdb exposing (Pouchdb,Doc)
 import Native.ElmPouchdb exposing (changes)
 
 {- Represents the events emited from the database.
 -}
 
-type ChangeEvent = Changed DocResult
+type ChangeEvent = Changed (Doc Value)
                  | Completed
                  | Error Value
                    
@@ -41,9 +41,9 @@ type alias NativeStart = GenEffect.NativeStart ChangeEvent
 
 type alias Tagger msg = GenEffect.Tagger ChangeEvent msg
 
-{- Represents a sequence related notion tthat specifies from when to start listening to the changes in the database. It is used within the ChangeOptions.
+{- Represents a sequence related notion that specifies from when to start listening to the changes in the database. It is used within the ChangeOptions.
 -}
-                      
+
 type Since = Now
            | Seq Int
 
@@ -96,7 +96,8 @@ onEffects : Platform.Router msg msg ->
             List (MySub msg) ->
             {b|processes:Processes msg}->
             Task Never (State msg)
-onEffects router subs state = GenEffect.onEffects (\x-> case x of Change changeType -> changeType) router subs state
+onEffects router subs state =
+  GenEffect.onEffects (\x-> case x of Change changeType -> changeType) router subs state
       
 onSelfMsg : Platform.Router msg msg ->
             msg ->

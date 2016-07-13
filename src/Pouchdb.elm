@@ -1,9 +1,11 @@
 module Pouchdb exposing ( JSFun(ViewName, Map, MapReduce)
-                        , DocResult
+                        , Doc
                         , Fail
                         , FailDestroy
-                        , SuccessPut
-                        , SuccessGetAllDocs
+                        , Put
+                        , Post
+                        , Remove
+                        , AllDocs
                         , SuccessDestroy
                         , Pouchdb
                         , db
@@ -13,7 +15,9 @@ module Pouchdb exposing ( JSFun(ViewName, Map, MapReduce)
                         , put
                         , post
                         , remove
+                        , getValue
                         , get
+                        , fromValue
                         , DocRequest
                         , request
                         , allDocs
@@ -65,11 +69,12 @@ module Pouchdb exposing ( JSFun(ViewName, Map, MapReduce)
 
 import Native.Pouchdb exposing (..)
 import Native.ElmPouchdb exposing (..)
-import Task exposing (Task,map)
+import Task exposing (Task,map,andThen,succeed,fail)
 import Basics exposing (Never)
 import Process exposing (spawn,kill)
 
 import Json.Encode exposing (Value)
+import Json.Decode as Json exposing (Decoder)
 import Platform.Sub exposing (Sub)
 import Dict  exposing (Dict)
 
@@ -305,11 +310,21 @@ type alias Fail = { status: Int
                   }
                 
                 
-{- When a put or a post  succeeds , this record will be received.
+{- When a put  succeeds , this record will be received.
 -}
-type alias SuccessPut = { id: DocId
-                        , rev: RevId
-                        }
+type alias Put = { id: DocId
+                 , rev: RevId
+                 }
+
+               
+{- When a post  succeeds , this record will be received.
+-}
+type alias Post = Put
+
+                
+{- When a remove  succeeds , this record will be received.
+-}
+type alias Remove = Put
                       
                       
 {- Represents a revision.
@@ -320,9 +335,9 @@ type alias Revision = { sequence : Int
                     
 {- The record received when the datavase is queried with 'get', 'all', or 'changes' functions.
 -}
-type alias DocResult = { id: DocId
+type alias Doc value = { id: DocId
                        , rev: Maybe RevId
-                       , doc : Maybe Value
+                       , doc : Maybe value
                        , revisions : Maybe (List Revision)
                        , conflicts : Maybe Value
                        , sequence : Maybe Int
@@ -330,12 +345,12 @@ type alias DocResult = { id: DocId
                        }
 
 
-{- When a 'all' or 'query' succeeds , this record will be received. Note, its a holder for a list of 'DocResult's.
+{- When a 'all' or 'query' succeeds , this record will be received. Note, its a holder for a list of 'Doc's.
 -}
-type alias SuccessGetAllDocs = { offset : Bool
-                               , totalRows : Int
-                               , docs : List DocResult
-                               }
+type alias AllDocs value = { offset : Bool
+                           , totalRows : Int
+                           , docs : List (Doc value)
+                           }
                              
                              
 {- Successful database deletion.
@@ -458,41 +473,84 @@ destroy db =
 
 {- Put a document in the database.
 -}
-put : Pouchdb -> Value -> Maybe String-> Task Fail SuccessPut
+put : Pouchdb -> Value -> Maybe String-> Task Fail Put
 put =
   Native.ElmPouchdb.put
         
 
 {- Post a document in the database.
 -}
-post : Pouchdb -> Value -> Task Fail SuccessPut
+post : Pouchdb -> Value -> Task Fail Post
 post =
   Native.ElmPouchdb.post
 
         
 {- Remove a document from the database.
 -}
-remove : Pouchdb -> DocId -> RevId-> Task Fail SuccessPut
+remove : Pouchdb -> DocId -> RevId-> Task Fail Remove
 remove db id rev=
   Native.ElmPouchdb.removeById db id (Just rev)
 
-        
+
 {- Retrieve a document from the database.
 -}  
-get : Pouchdb -> DocRequest -> Task Fail DocResult
-get db req =
+getValue : Pouchdb -> DocRequest -> Task Fail (Doc Value)
+getValue db req =
   Native.ElmPouchdb.get db req
+
+  
+{- Retrieve a document from the database.
+-}  
+get : Pouchdb->Json.Decoder value-> DocRequest -> Task Fail (Doc value)
+get db decoder req =
+  Native.ElmPouchdb.get db req `andThen` (decode decoder)
+
+  
+{- internal decode helper function.
+-}
+decode: Json.Decoder value -> Doc Value -> Task Fail (Doc value)
+decode decoder doc =
+  case fromValue decoder doc of
+      Result.Ok value -> 
+        succeed value
+      Result.Err error ->
+        fail error
+  
+{- Helper function for decoding Doc
+-}       
+fromValue : Json.Decoder value -> Doc Value -> Result Fail (Doc value)
+fromValue decoder doc =
+  let
+    valDoc =  case doc.doc of
+                Just val -> Json.decodeValue decoder val
+                Nothing -> Result.Err "trying to decode empty payload"
+  in
+    case valDoc of
+      Result.Ok value -> 
+        Result.Ok { id=doc.id
+                  , rev=doc.rev
+                  , doc=Just value
+                  , revisions=doc.revisions
+                  , conflicts=doc.conflicts
+                  , sequence=doc.sequence
+                  , key=doc.key
+                  }
+      Result.Err error ->
+        Result.Err { status= 0
+                   , name= "empty payload"
+                   , message= error
+                   }                        
 
         
 {- Fetch within all documenst in the databse.
 -}
-allDocs : Pouchdb -> AllDocsRequest -> Task Fail SuccessGetAllDocs
+allDocs : Pouchdb -> AllDocsRequest -> Task Fail (AllDocs value)
 allDocs db req =
   Native.ElmPouchdb.allDocs db req
 
         
 {- Query the database.
 -}
-query : Pouchdb -> QueryRequest -> Task Fail SuccessGetAllDocs
+query : Pouchdb -> QueryRequest -> Task Fail (AllDocs value)
 query db req =
   Native.ElmPouchdb.query db req
