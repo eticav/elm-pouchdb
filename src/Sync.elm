@@ -3,7 +3,7 @@ effect module Sync where { subscription = MySub }
          
 {-| Synchronise data between source and target. Sync effects is a Pouchdb related module. Its unique role is to provide a subscription mechanism to [Pouchdb](https://pouchdb.com/)[/CouchDB](http://couchdb.apache.org/) for your application. This library is to be used jointly with the Pouchdb library.
 
-@docs new 
+@docs new
 -}
 
 import Native.Pouchdb exposing (..)
