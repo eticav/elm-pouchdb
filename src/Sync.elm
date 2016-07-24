@@ -1,8 +1,9 @@
 effect module Sync where { subscription = MySub }
        exposing (new)
          
-{- Synchronise data between source and target. Sync effects is a Pouchdb related module. Its unique role is to provide a subscription mechanism to [Pouchdb](https://pouchdb.com/)[/CouchDB](http://couchdb.apache.org/) for your application. This library is to be used jointly with the Pouchdb library.
+{-| Synchronise data between source and target. Sync effects is a Pouchdb related module. Its unique role is to provide a subscription mechanism to [Pouchdb](https://pouchdb.com/)[/CouchDB](http://couchdb.apache.org/) for your application. This library is to be used jointly with the Pouchdb library.
 
+@docs new 
 -}
 
 import Native.Pouchdb exposing (..)
@@ -31,7 +32,22 @@ import GenEffect exposing (ChangeType
                           , subMap)
 import Pouchdb exposing (Pouchdb)
 
-{- Creates a new sync subscrition to the Pouchdb database.
+{-| Creates a new sync subscrition to the Pouchdb database. Its syntatic sugar for a bi-directional replication. Therfore S1ync.new reusses Options and ReplicateEvent from Replicate module. Check the Replicate documentation for more details.
+
+    type Message = Sync Replicate.ReplicateEvent
+                 | ...
+
+    subscriptions : Model -> Sub Message
+    subscriptions model =
+      let
+        ...
+    
+        pushOpt = Replicate.defaultOptions
+        pullOpt = Replicate.defaultOptions
+
+        sync = Sync.new "sync1" model.sourceDb model.destDb pushOpt pullOpt Sync
+      in
+      Sub.batch [sync, ...]
 -}
 
 new : SubId->Pouchdb->Pouchdb->Options->Options->(Tagger msg)->Sub msg

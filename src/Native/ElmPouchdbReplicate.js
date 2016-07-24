@@ -61,14 +61,6 @@ var _user$project$Native_ElmPouchdbReplicate = function() {
     return options;
   }
 
-  function setView(filter,options){
-    if ( filter.ctor === 'View' ) {
-      options.filter = '_view';
-      options.view = filter._0;
-    }
-    return options;
-  }
-
   function setFilter(filter,options){
     if ( filter.ctor === 'Name' ) {
       options.filter = filter._0;
@@ -77,11 +69,15 @@ var _user$project$Native_ElmPouchdbReplicate = function() {
       options.filter = Function ('doc', filter._0);
     }
     if ( filter.ctor === 'View' ) {
-      options.filter=filter.live._0;
+      options.filter = '_view';
+      options.view = filter._0;
+    }
+    if ( filter.ctor === 'Ids' ) {
+       options.doc_ids=toArray(filter._0);
     }
     return options;
   }
-
+  
   function setMaybe(attr,doc_ids,options){
     if ( doc_ids.ctor === 'Just' ) {
       options[attr] = doc_ids._0;
@@ -89,17 +85,10 @@ var _user$project$Native_ElmPouchdbReplicate = function() {
     return options;
   }
   
-  function setDocIds(doc_ids,options){
-    if ( doc_ids.ctor === 'Just' ) {
-      options.doc_ids = doc_ids._0;
-    }
-    return options;
-  }
-  
   function toOptions(options)
   {
-    let live = toLive(options.live);
-    let returnOpt= { live : live
+    var live = toLive(options.live);
+    var returnOpt= { live : live
                      , since : toSince(options.since)
                    };
     
@@ -107,11 +96,10 @@ var _user$project$Native_ElmPouchdbReplicate = function() {
       setRetry(options.live, returnOpt);
       setBackOff(options.live, returnOpt);
     }
-    setView(options.filter,returnOpt);
+    
     setFilter(options.filter,returnOpt);
     
-    setMaybe('docs_ids',options.doc_ids,returnOpt);
-    setMaybe('query_params',options.query_params,returnOpt);
+    // setMaybe('query_params',options.query_params,returnOpt); //TODO
     setMaybe('heartbeat',options.heartbeat,returnOpt);
     setMaybe('timeout',options.timeout,returnOpt);
     setMaybe('batch_size',options.batch_size,returnOpt);
@@ -127,47 +115,47 @@ var _user$project$Native_ElmPouchdbReplicate = function() {
       
       function onChange(raw)
       {
-        let obj = toChange(raw);
-	let task = toTask(obj);
+        var obj = toChange(raw);
+	var task = toTask(obj);
 	rawSpawn(task);
       };
 
       function onPaused(raw)
       {
-        let obj = toPaused(raw);
-	let task = toTask(obj);
+        var obj = toPaused(raw);
+	var task = toTask(obj);
 	rawSpawn(task);
       };
       
       function onActive(raw)
       {
-        let obj = toActive(raw);
-	let task = toTask(obj);
+        var obj = toActive(raw);
+	var task = toTask(obj);
 	rawSpawn(task);
       };
 
       function onDenied(raw)
       {
-        let obj = toDenied(raw);
-	let task = toTask(obj);
+        var obj = toDenied(raw);
+	var task = toTask(obj);
 	rawSpawn(task);
       };
       
       function onComplete(raw)
       {
-	let obj = toComplete(raw);
-	let task = toTask(obj);
+	var obj = toComplete(raw);
+	var task = toTask(obj);
 	rawSpawn(task);
       };
 
       function onError(raw)
       {
-	let obj = toError(raw);
-	let task = toTask(obj);
+	var obj = toError(raw);
+	var task = toTask(obj);
 	rawSpawn(task);
       };
       
-      let replicate = source.replicate.to(target,toOptions(options))
+      var replicate = source.replicate.to(target,toOptions(options))
             .on('change', onChange)
             .on('paused', onPaused)
             .on('active', onActive)
@@ -189,51 +177,51 @@ var _user$project$Native_ElmPouchdbReplicate = function() {
       
       function onChange(raw)
       {
-        let obj = toChange(raw);
-	let task = toTask(obj);
+        var obj = toChange(raw);
+	var task = toTask(obj);
 	rawSpawn(task);
       };
 
       function onPaused(raw)
       {
-        let obj = toPaused(raw);
-	let task = toTask(obj);
+        var obj = toPaused(raw);
+	var task = toTask(obj);
 	rawSpawn(task);
       };
       
       function onActive(raw)
       {
-        let obj = toActive(raw);
-	let task = toTask(obj);
+        var obj = toActive(raw);
+	var task = toTask(obj);
 	rawSpawn(task);
       };
 
       function onDenied(raw)
       {
-        let obj = toDenied(raw);
-	let task = toTask(obj);
+        var obj = toDenied(raw);
+	var task = toTask(obj);
 	rawSpawn(task);
       };
       
       function onComplete(raw)
       {
-	let obj = toComplete(raw);
-	let task = toTask(obj);
+	var obj = toComplete(raw);
+	var task = toTask(obj);
 	rawSpawn(task);
       };
 
       function onError(raw)
       {
-	let obj = toError(raw);
-	let task = toTask(obj);
+	var obj = toError(raw);
+	var task = toTask(obj);
 	rawSpawn(task);
       };
 
-      let options = { push : toOptions(pushOptions)
+      var options = { push : toOptions(pushOptions)
                       , pull : toOptions(pullOptions)
                     };
       
-      let replicate = source.sync(target,options)
+      var replicate = source.sync(target,options)
             .on('change', onChange)
             .on('paused', onPaused)
             .on('active', onActive)

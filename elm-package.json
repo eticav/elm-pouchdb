@@ -1,6 +1,6 @@
 {
     "version": "1.0.0",
-    "summary": "helpful summary of your project, less than 80 characters",
+    "summary": "Elm bindings to the great Pouchdb library.",
     "repository": "https://github.com/user/project.git",
     "license": "BSD3",
     "source-directories": [
@@ -8,7 +8,10 @@
       , "./src/Native/"
     ],
   "exposed-modules":[
-   
+    "Pouchdb"
+    , "Change"
+    , "Replicate"
+    , "Sync"
   ],
    "native-modules": true,
     "dependencies": {
@@ -16,5 +19,3 @@
     },
     "elm-version": "0.17.0 <= v < 0.18.0"
 }
-
-

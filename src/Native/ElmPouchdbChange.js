@@ -53,25 +53,57 @@ var _user$project$Native_ElmPouchdbChange = function() {
 
   function toSince(since){
     if ( since.ctor === 'Seq') {return since._0;}
+    if ( since.ctor === 'Now') {return 'now';}
     return false;
   }
- 
+
+   function setMaybe(attr,doc_ids,options){
+    if ( doc_ids.ctor === 'Just' ) {
+      options[attr] = doc_ids._0;
+    }
+    return options;
+  }
+
+  function setFilter(filter,options){
+    if ( filter.ctor === 'Name' ) {
+      options.filter = filter._0;
+    }
+    if ( filter.ctor === 'Fun' ) {
+      options.filter = Function ('doc', filter._0);
+    }
+    if ( filter.ctor === 'View' ) {
+      options.filter = '_view';
+      options.view = filter._0;
+    }
+    if ( filter.ctor === 'Ids' ) {
+       options.doc_ids=toArray(filter._0);
+    }
+    return options;
+  }
   
   function toOptions(options)
   {
-    return   {
-      live : options.live
-      , include_docs : options.include_docs
-      , include_conflicts : options.include_conflicts
-      , attachments : options.attachments
-      , descending  : options.descending
-      , since : toSince(options.since)
-      , limit : getMaybeValue(options.limit,false)} ;
+    var returnOpt=  { live : options.live
+                      , since : toSince(options.since)
+                    };
+    
+    setFilter(options.filter,returnOpt);
+
+    setMaybe('include_docs',options.include_docs,returnOpt);
+    setMaybe('include_conflicts',options.include_conflicts,returnOpt);
+    setMaybe('attachments',options.attachments,returnOpt);
+    setMaybe('descending',options.descending,returnOpt);
+    setMaybe('timeout',options.timeout,returnOpt);
+    setMaybe('limit',options.limit,returnOpt);
+    setMaybe('heartbeat',options.heartbeat,returnOpt);
+    setMaybe('return_docs',options.return_docs,returnOpt);
+    setMaybe('batch_size',options.batch_size,returnOpt);
+    //, query_params : List QueryParam //TODO
+    return  returnOpt;
   };
   
   function changes(db,options,toChangeTask)
   {
-    //console.log(options);
     return nativeBinding(function(callback){
       
       function onChange(rawchange)

@@ -83,7 +83,7 @@ var _user$project$Native_ElmPouchdb = function() {
   }
 
   function toDbOptions(opt){
-    let options = {};
+    var options = {};
     setMaybe (opt.auto_compaction,options, 'auto_compaction');
     setAdapter(opt,opt.adaptor);
     setMaybe(opt.revs_limit,options,'revs_limit');
@@ -97,11 +97,10 @@ var _user$project$Native_ElmPouchdb = function() {
   }
   
   function db(name,opt){
-    let options = toDbOptions(opt);
+    var options = toDbOptions(opt);
     var rv = new PouchDB(name,options);
     return rv;
   };
-
 
   function toRevsGet(revisons){
     var revs = EmptyList;
@@ -115,10 +114,10 @@ var _user$project$Native_ElmPouchdb = function() {
   }
 
   function toSuccessGet(response) {
-    let returnVal = {};
+    var returnVal = {};
     returnVal.id=response._id;
     returnVal.rev=Just(response._rev);
-    let doc = {};
+    var doc = {};
     returnVal.conflicts = Nothing;
     returnVal.revisions = Nothing;
     for (var property in response) {
@@ -135,7 +134,7 @@ var _user$project$Native_ElmPouchdb = function() {
   }
 
   function toSuccessAllDocs(response) {
-    let returnVal = {};
+    var returnVal = {};
     returnVal.offset=response.offset;
     returnVal.totalRows=response.total_rows;
     returnVal.docs=EmptyList;
@@ -157,7 +156,7 @@ var _user$project$Native_ElmPouchdb = function() {
   }
 
   function toSuccessQuery(response) {
-    let returnVal = {};
+    var returnVal = {};
     returnVal.offset=response.offset;
     returnVal.totalRows=response.total_rows;
     returnVal.docs=EmptyList;
@@ -185,23 +184,35 @@ var _user$project$Native_ElmPouchdb = function() {
     });
   };
 
-  function put(db,doc,rev){
-    if (rev.ctor === 'Just'){
-      return nativeBinding(function(callback){
-        db.put( doc, doc.id, rev._0, function(err,response) {
-          if (err) { return callback(fail(toFail(err))); }
-          return callback(succeed(toSuccessPut(response)));
-        });
+  function destructiveReset(db,name){
+    var check = function (name,callback){
+      var db=new PouchDB(name);
+      db.allDocs(function(err, info) {
+        if (err) { return callback(fail({ ctor: 'Failed' })); }
+        return callback(succeed(db));
       });
-    }else
-      return nativeBinding(function(callback){
-        db.put( doc, function(err,response) {
-          if (err) { return callback(fail(toFail(err))); }
-          return callback(succeed(toSuccessPut(response)));
-        });
+    };
+    return nativeBinding(function(callback){
+      db.destroy(function(err, response) {
+        if (err) { return callback(fail({ ctor: 'Failed' })); }
+        return check(name,name,callback);
       });
-  }
+    });
+    };
+  
 
+  function put(db,doc,rev){
+    return nativeBinding(function(callback){
+      if (rev.ctor === 'Just') {
+        doc._rev = rev._0;
+      }
+      db.put( doc, function(err,response) {
+        if (err) { return callback(fail(toFail(err))); }
+        return callback(succeed(toSuccessPut(response)));
+      });
+    });
+  };
+    
   function post(db,doc){
     return nativeBinding(function(callback){
       db.post( doc, function(err,response) {
@@ -212,16 +223,16 @@ var _user$project$Native_ElmPouchdb = function() {
   }
 
   function remove(db,doc,rev){
-    var deletedDoc = db;
-    deletedDoc._deleted=true;
-    put(db,deletedDoc,rev);
+    var devaredDoc = db;
+    devaredDoc._devared=true;
+    put(db,devaredDoc,rev);
   };
 
   function removeById(db,id,rev){
-    var deletedDoc = { _id:id
-                       , _deleted:true};
+    var devaredDoc = { _id:id
+                       , _devared:true};
     
-    put(db,deletedDoc,rev);
+    put(db,devaredDoc,rev);
   };
 
   function toGetOptions(req){
@@ -236,7 +247,7 @@ var _user$project$Native_ElmPouchdb = function() {
   
   function get(db,req) {
     var id = req.id;
-    let options = toGetOptions(req);
+    var options = toGetOptions(req);
     return nativeBinding(function(callback){
       db.get(id, options,function(err, doc) {
         if (err) { return callback(fail(toFail(err))); }
@@ -265,7 +276,7 @@ var _user$project$Native_ElmPouchdb = function() {
   }
   
   function allDocs(db,req) {
-    let options = toAllDocsOptions(req);
+    var options = toAllDocsOptions(req);
     return nativeBinding(function(callback){
       db.allDocs(options,function(err, docs) {
         if (err) { return callback(fail(toFail(err))); }
@@ -306,7 +317,7 @@ var _user$project$Native_ElmPouchdb = function() {
   }
 
   function getFun(fun){
-    let returnValue;
+    var returnValue;
       switch (fun.ctor) {
       case 'MapReduce':
         returnValue = eval(fun._0);
@@ -330,8 +341,8 @@ var _user$project$Native_ElmPouchdb = function() {
   }
   
   function query(db,opt) {
-    let fun = getFun(opt.fun);
-    let options = {};
+    var fun = getFun(opt.fun);
+    var options = {};
     setMaybe(opt.include_docs,options,'include_docs');
     setMaybe(opt.conflicts,options,'conflicts');
     setMaybe(opt.attachments,options,'attachments');
@@ -356,6 +367,7 @@ var _user$project$Native_ElmPouchdb = function() {
   }
   
   return { db: F2(db)
+           , destructiveReset:F2(destructiveReset)
            , destroy: destroy
            , get: F2(get)
            , allDocs: F2(allDocs)
