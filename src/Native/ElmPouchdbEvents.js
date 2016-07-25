@@ -24,19 +24,19 @@ var _user$project$Native_ElmPouchdbEvents = function() {
       
       function onCreated(raw)
       {
-        let obj=toCreated(raw);
-	let task = toTask(obj);
+        var obj=toCreated(raw);
+	var task = toTask(obj);
 	rawSpawn(task);
       };
 
       function onDestroyed(raw)
       {
-        let obj=toDestroyed(raw);
-	let task = toTask(obj);
+        var obj=toDestroyed(raw);
+	var task = toTask(obj);
 	rawSpawn(task);
       };
       
-      let listen = PouchDB
+      var listen = PouchDB
             .on('created', onCreated)
             .on('destroyed', onDestroyed);
       
