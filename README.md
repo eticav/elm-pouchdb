@@ -120,7 +120,7 @@ Listening to document changes is done with a subscription mecanism
 
 
 
-# Replicating docments from one database to another
+# Replicating documents from one database to another
 
 Replication is done with a subscription mecanism
 
