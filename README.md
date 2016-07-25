@@ -1,6 +1,6 @@
 # elm-pouchdb
 
-This library is a a set of Elm modules that bind the functionalities of the great pouchdb library.
+This library is a a set of [Elm](http://www.elm-lang.org/) modules that bind the functionalities of the great [pouchdb](https://pouchdb.com/) library. This library enables the user to use [Couchdb](http://couchdb.apache.org/)/[pouchdb](https://pouchdb.com/) database. It is great tool for mobile first applications, thanks to the powerfull sync feature of Couchdb comptatible databases.
 
 
 It contains:
@@ -11,13 +11,10 @@ It contains:
 -  **Events** effect module that provides subscritions for listening to database events.
 
 
-Any helpfull contributions from any contributors are all welcome.
-
-
 This library was initially created by **Etienne Cavard** for **Oriata** and posted under **BSD3 license** on the 24 july 2016.
 
 
-Thanks to the Pouchdb team and Elm-lang team for their respective work on the js Pouchdb library and the Elm language.
+Thanks to the Pouchdb team and Elm-lang team for their respective work on the js [pouchdb](https://pouchdb.com/) library and the [Elm](http://www.elm-lang.org/) language.
 
 
 # Declaring local and remote database
