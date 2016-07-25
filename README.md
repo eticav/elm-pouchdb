@@ -20,7 +20,7 @@ This library was initially created by **Etienne Cavard** for **Oriata** and post
 Thanks to the Pouchdb team and Elm-lang team for their respective work on the js Pouchdb library and the Elm language.
 
 
-# declaring local and remote database
+# Declaring local and remote database
 
 ```elm
 
@@ -44,9 +44,27 @@ Thanks to the Pouchdb team and Elm-lang team for their respective work on the js
         
 ```
 
-# listening to document changes
+# Listening to document changes
 
-subscriptions : Model -> Sub Message
+Listening to document changes is done with a subscription mecanism
+
+```elm
+
+    type Message = Change Change.ChangeEvent
+                   | ...
+
+    update : Message -> Model -> (Model, Cmd Message)
+    update msg model =
+      case msg of
+        Change evt->
+          case evt of
+            Changed docValue ->
+              ... some doc changes here
+            Completed ->(model,Cmd.none)
+            Error _ ->(model,Cmd.none)
+        ...
+
+    subscriptions : Model -> Sub Message
     subscriptions model =
       let
         options = Change.changeOptions
@@ -55,3 +73,49 @@ subscriptions : Model -> Sub Message
         change = Change.new "change1" model.localDb options Change
       in
       change
+      
+```
+
+
+
+# Replicating docments from one database to another
+
+Replication is done with a subscription mecanism
+
+```elm
+
+    type Message = Replicate Replicate.ReplicateEvent
+                    | ...
+    
+    
+    type alias Model = { sourceDb : Pouchdb
+                       , destDb : Pouchdb
+                       ...
+                       }
+    ...
+
+    update : Message -> Model -> (Model, Cmd Message)
+    update msg model =
+      case msg of
+        Replicate evt->
+          -- providing all cases here, for documentation only
+          case evt of
+            Replicate.Completed value->(model,Cmd.none)
+            Replicate.Active value->(model,Cmd.none)
+            Replicate.Paused value->(model,Cmd.none)
+            Replicate.Changed value->(model,Cmd.none)
+            Replicate.Denied value->(model,Cmd.none)
+            Replicate.Error value->(model,Cmd.none)
+        ...
+    
+    subscriptions : Model -> Sub Message
+    subscriptions model =
+      let
+        replOpt = Replicate.defaultOptions
+        
+        replication = Replicate.new "replication" model.sourceDb model.destDb replOpt Replicate
+        ...
+      in
+      Sub.batch [replication, ...]
+      
+```
