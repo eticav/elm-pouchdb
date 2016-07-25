@@ -43,6 +43,48 @@ Thanks to the Pouchdb team and Elm-lang team for their respective work on the js
         }
         
 ```
+# Put, Post, Get and All_docs, Query Operations on databases
+
+All these oprations are implemented as Task. Below is an example for the **Put** Operation.
+
+```elm
+
+    type Message = PutButton
+                 | PutError Pouchdb.Fail
+                 | PutSuccess Pouchdb.Put
+
+    -- a bit of encoding
+    encoder : String->String->Encode.Value
+    encoder id val =
+       Encode.object
+          [ ("_id", Encode.string id)
+          , ("val", Encode.string val)
+          ]
+    
+    -- PutButton was sent by a button, see how a put task is now send.
+    
+    update : Message -> Model -> (Model, Cmd Message)
+    update msg model =
+      case msg of
+        PutButton->
+          let 
+            task = (Pouchdb.put model.localDb (encoder "id2" "hello") Nothing)
+            cmd = Task.perform PutError PutSuccess task
+          in
+           (model,cmd)
+        PutSuccess msg->
+          let 
+            newMsg = String.append "Successfully put in db with rev = " msg.rev
+          in
+            ({model|returnMsg=Just newMsg}, Cmd.none)
+        PutError msg->
+          let
+            newMsg = String.append "Error putting in db with message = " msg.message
+          in
+           ({model|returnMsg=Just newMsg}, Cmd.none)
+        
+```
+
 
 # Listening to document changes
 
