@@ -4,7 +4,7 @@ This library is a a set of Elm modules that bind the functionalities of the grea
 
 
 It contains:
-- **Pouchdb** for dealing with the creation of databases and standard operations like put, post, get, all_docs and queries and many others...
+- **Pouchdb** module for dealing with the creation of databases and standard operations like put, post, get, all_docs and queries and many others...
 - **Change** effect module that provides subscriptions for listening to document events within the databases.
 - **Replicate** effect module that provides subscriptions for replicating one database to the another.
 - **Sync** effect module that provides subscritions for syncing one database to another.
@@ -45,7 +45,7 @@ Thanks to the Pouchdb team and Elm-lang team for their respective work on the js
 ```
 # Put, Post, Get and All_docs, Query Operations on databases
 
-All these oprations are implemented as Task. Below is an example for the **Put** Operation.
+All these oprations are implemented as Tasks. Below is an example for the **Put** Operation.
 
 ```elm
 
