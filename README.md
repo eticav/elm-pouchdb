@@ -18,3 +18,40 @@ This library was initially created by **Etienne Cavard** for **Oriata** and post
 
 
 Thanks to the Pouchdb team and Elm-lang team for their respective work on the js Pouchdb library and the Elm language.
+
+
+# declaring local and remote database
+
+```elm
+
+    type alias Model =
+      { local : Pouchdb
+      , remote : Pouchdb
+      }
+    
+    initialModel : Model
+    initialModel =
+      let
+        local = db "DB-Test" dbOptions
+        remote = db "https://xxxxxx.cloudant.com/db-test"
+          (dbOptions
+            |> auth "myUserName" "myPassword"
+            |> ajaxCache True)
+      in 
+        { local = local
+        , remote = remote
+        }
+        
+```
+
+# listening to document changes
+
+subscriptions : Model -> Sub Message
+    subscriptions model =
+      let
+        options = Change.changeOptions
+                  |> since Now
+        
+        change = Change.new "change1" model.localDb options Change
+      in
+      change
