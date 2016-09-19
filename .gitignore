@@ -1,5 +1,6 @@
 elm-stuff
 *.log
+*.*#
 test.js
 index.js
 main.js
