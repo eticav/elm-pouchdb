@@ -1,6 +1,7 @@
 'use strict';
 
-var _powet$elm_pouchdb$Native_ElmPouchdbReplicate = function() {
+//var _powet$elm_pouchdb$Native_ElmPouchdbReplicate = function() {
+var _user$project$Native_ElmPouchdbReplicate = function() {
   
   var nativeBinding = _elm_lang$core$Native_Scheduler.nativeBinding;
   var succeed = _elm_lang$core$Native_Scheduler.succeed;
@@ -13,23 +14,23 @@ var _powet$elm_pouchdb$Native_ElmPouchdbReplicate = function() {
   var toArray = _elm_lang$core$Native_List.toArray;
   
   function toChange(raw){
-    return raw;
+    return { ctor: 'Changed'};
   };
   
   function toError(raw){
-    return raw;
+    return { ctor: 'Error'};
   };
 
   function toPaused(raw){
-    return raw;
+   return { ctor: 'Paused'};
   };
 
   function toActive(raw){
-    return raw;
+    return { ctor: 'Active'};
   };
 
   function toDenied(raw){
-    return raw;
+    return { ctor: 'Denied'};
     };
   
   function toComplete(raw){

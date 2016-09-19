@@ -28,6 +28,7 @@ type Message = PutButton
              | PutSuccess Pouchdb.Put
              | Change Change.ChangeEvent
              | Replicate Replicate.ReplicateEvent
+             | NoOp
 
 type alias DocModel = { id :String
                       , val : String }
@@ -98,6 +99,8 @@ update msg model =
         Replicate.Changed value->(model,Cmd.none)
         Replicate.Denied value->(model,Cmd.none)
         Replicate.Error value->(model,Cmd.none)
+    NoOp ->
+      (model,Cmd.none)
       
   
 view : Model -> Html Message
