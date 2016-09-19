@@ -1,6 +1,6 @@
 'use strict';
 
-var _user$project$Native_ElmPouchdbChange = function() {
+var _powet$elm_pouchdb$Native_ElmPouchdbChange = function() {
   
   var nativeBinding = _elm_lang$core$Native_Scheduler.nativeBinding;
   var succeed = _elm_lang$core$Native_Scheduler.succeed;

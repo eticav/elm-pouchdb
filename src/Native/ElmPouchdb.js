@@ -1,6 +1,6 @@
 'use strict';
 
-var _user$project$Native_ElmPouchdb = function() {
+var _powet$elm_pouchdb$Native_ElmPouchdb = function() {
   
   var nativeBinding = _elm_lang$core$Native_Scheduler.nativeBinding;
   var succeed = _elm_lang$core$Native_Scheduler.succeed;
@@ -255,7 +255,15 @@ var _user$project$Native_ElmPouchdb = function() {
       });
     });
   }
-
+  function replaceAny(item){
+    if (item==="{}"){
+      return {};
+    }
+    else {
+      return item;
+    }
+  }
+  
   function toAllDocsOptions(req){
     var options = {};
     setMaybe(req.include_docs,options,'include_docs');
@@ -264,10 +272,34 @@ var _user$project$Native_ElmPouchdb = function() {
     setMaybe(req.descending,options,'descending');
     setMaybe(req.skip,options,'skip');
     setMaybe(req.startkey,options,'startkey');
+    if (options.startkey) {
+      options.startkey = toArray(options.startkey);
+      options.startkey = options.startkey.map(replaceAny);
+      if(options.startkey.length==1){
+        options.startkey =options.startkey[0];
+      }
+    }
     setMaybe(req.endkey,options,'endkey');
+    if (options.endkey) {
+      options.endkey = toArray(options.endkey);
+      options.endkey = options.endkey.map(replaceAny);
+      if(options.endkey.length==1){
+        options.endkey =options.endkey[0];
+      }
+    }
+    
+    if (options.startkey && options.endkey){
+      if(Array.isArray(options.startkey) && !Array.isArray(options.endkey)){
+        options.endkey=[options.endkey];
+      }
+      if(Array.isArray(options.endkey) && !Array.isArray(options.startkey)){
+        options.startkey=[options.startkey];
+      } 
+    }
+
+    
     setMaybe(req.inclusive_end,options,'inclusive_end');
     setMaybe(req.limit,options,'limit');
-    setMaybe(req.key,options,'key');
     setMaybe(req.keys,options,'keys');
     if (options.keys) {
       options.keys = toArray(options.keys);
@@ -349,11 +381,38 @@ var _user$project$Native_ElmPouchdb = function() {
     setMaybe(opt.descending,options,'descending');
     setMaybe(opt.skip,options,'skip');
     setMaybe(opt.startkey,options,'startkey');
+    if (options.startkey) {
+      options.startkey = toArray(options.startkey);
+      options.startkey = options.startkey.map(replaceAny);
+      if(options.startkey.length==1){
+        options.startkey =options.startkey[0];
+      }
+    }
     setMaybe(opt.endkey,options,'endkey');
+    if (options.endkey) {
+      options.endkey = toArray(options.endkey);
+      options.endkey = options.endkey.map(replaceAny);
+      if(options.endkey.length==1){
+        options.endkey =options.endkey[0];
+      }
+    }
+    
+    if (options.startkey && options.endkey){
+      if(Array.isArray(options.startkey) && !Array.isArray(options.endkey)){
+        options.endkey=[options.endkey];
+      }
+      if(Array.isArray(options.endkey) && !Array.isArray(options.startkey)){
+        options.startkey=[options.startkey];
+      } 
+    }
+     
     setMaybe(opt.inclusive_end,options,'inclusive_end');
     setMaybe(opt.limit,options,'limit');
-    setMaybe(opt.key,options,'key');
+    //setMaybe(opt.key,options,'key');
     setMaybe(opt.keys,options,'keys');
+    if (options.keys) {
+      options.keys = toArray(options.keys);
+    }
     setStale(opt.stale,options);
     setReduce(opt.reduce,options);
     setGroupLevel(opt.groupLevel,options);

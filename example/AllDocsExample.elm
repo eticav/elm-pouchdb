@@ -67,7 +67,11 @@ update msg model =
     PutButton->
       let
         req= Pouchdb.allDocsRequest
-             |> Pouchdb.include_docs True
+             |> (Pouchdb.include_docs True)
+             |> Pouchdb.startkey ["id2"]
+             |> Pouchdb.endkey ["id3"]
+             |> Pouchdb.inclusive_end False
+                
         task = Pouchdb.allDocs model.localDb req
         cmd = Task.perform AllDocsError AllDocsSuccess task
       in

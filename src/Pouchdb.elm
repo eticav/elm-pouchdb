@@ -45,7 +45,6 @@ module Pouchdb exposing ( JSFun(ViewName, Map, MapReduce)
                         , attachments
                         , binary
                         , keys
-                        , key
                         , descending
                         , skip
                         , limit
@@ -76,11 +75,12 @@ module Pouchdb exposing ( JSFun(ViewName, Map, MapReduce)
 @docs JSFun, QueryRequest, queryRequest, query
 
 ## Requests helper function
-@docs revs, conflicts, attachments, binary, keys, key, descending, skip, limit, inclusive_end, endkey, startkey, include_docs
+@docs revs, conflicts, attachments, binary, keys, descending, skip, limit, inclusive_end, endkey, startkey, include_docs
 -}
 
 import Native.Pouchdb exposing (..)
 import Native.ElmPouchdb exposing (..)
+
 import Task exposing (Task,map,andThen,succeed,fail)
 import Basics exposing (Never)
 import Process exposing (spawn,kill)
@@ -178,18 +178,17 @@ binary x request =
 type alias AllDocsRequest = { include_docs : Maybe Bool
                             , conflicts : Maybe Bool
                             , attachments : Maybe  Bool
-                            , startkey : Maybe DocId
-                            , endkey : Maybe DocId
+                            , startkey : Maybe (List DocId)
+                            , endkey : Maybe (List DocId)
                             , inclusive_end : Maybe Bool
                             , limit : Maybe Int
                             , skip : Maybe Int
                             , descending : Maybe Bool
-                            , key : Maybe DocId
                             , keys : Maybe (List DocId)
                             }
 
                           
-{-| A helper function for creating a miniumum [AllDocsRequest](#AllDocsRequest). The helper function [include_docs](#include_docs), [conflicts](#conflicts), [attachments](#attachments), [startkey](#startkey), [endkey](#endkey), [inclusive_end](#inclusive_end), [limit](#limit), [skip](#skip), [descending](#descending), [key](#key) and [keys](#keys) are provided to complete the query request. Use them instead of accessing directly to the record.
+{-| A helper function for creating a miniumum [AllDocsRequest](#AllDocsRequest). The helper function [include_docs](#include_docs), [conflicts](#conflicts), [attachments](#attachments), [startkey](#startkey), [endkey](#endkey), [inclusive_end](#inclusive_end), [limit](#limit), [skip](#skip), [descending](#descending) and [keys](#keys) are provided to complete the query request. Use them instead of accessing directly to the record.
 -}
 allDocsRequest :  AllDocsRequest
 allDocsRequest = { include_docs = Maybe.Nothing
@@ -201,7 +200,6 @@ allDocsRequest = { include_docs = Maybe.Nothing
                  , limit = Maybe.Nothing
                  , skip = Maybe.Nothing
                  , descending = Maybe.Nothing
-                 , key = Maybe.Nothing
                  , keys = Maybe.Nothing
                  }
 
@@ -215,29 +213,29 @@ include_docs x request =
     
 {-| Represents a helper function to use when doing requests. If used, get documents with IDs in a certain range starting at [startkey](#startkey).
 -}
-startkey : DocId->
-           {a|startkey:Maybe DocId,key:Maybe DocId, keys:Maybe (List DocId) }->
-           {a|startkey:Maybe DocId,key:Maybe DocId, keys:Maybe (List DocId) }
+startkey : List DocId->
+           {a|startkey:Maybe (List DocId), keys:Maybe (List DocId) }->
+           {a|startkey:Maybe (List DocId), keys:Maybe (List DocId) }
 startkey x request =
-  {request|startkey = Just x, key=Nothing, keys=Nothing}
+  {request|startkey = Just x, keys=Nothing}
     
 
 {-| Represents a helper function to use when doing requests. If used, get documents with IDs in a certain range ending at [endkey](#endkey).
 -}
-endkey : DocId->
-           {a|endkey:Maybe DocId,key:Maybe DocId, keys:Maybe (List DocId) }->
-           {a|endkey:Maybe DocId,key:Maybe DocId, keys:Maybe (List DocId) }
+endkey : List DocId->
+           {a|endkey:Maybe (List DocId), keys:Maybe (List DocId) }->
+           {a|endkey:Maybe (List DocId), keys:Maybe (List DocId) }
 endkey x request =
-  {request|endkey = Just x, key=Nothing, keys=Nothing}
+  {request|endkey = Just x, keys=Nothing}
 
     
 {-| Represents a helper function to use when doing requests. If used, includes the [endkey](#endkey) document.
 -}
 inclusive_end : Bool->
-           {a|inclusive_end:Maybe Bool,key:Maybe DocId, keys:Maybe (List DocId) }->
-           {a|inclusive_end:Maybe Bool,key:Maybe DocId, keys:Maybe (List DocId) }
+           {a|inclusive_end:Maybe Bool, keys:Maybe (List DocId) }->
+           {a|inclusive_end:Maybe Bool, keys:Maybe (List DocId) }
 inclusive_end x request =
-  {request|inclusive_end = Just x, key=Nothing, keys=Nothing}
+  {request|inclusive_end = Just x, keys=Nothing}
     
 
 {-| Represents a helper function to use when doing requests. If used, sets the maximum number of documents to return.
@@ -258,25 +256,15 @@ skip x request =
 -}
 descending : Bool->{a|descending:Maybe Bool}->{a|descending:Maybe Bool}
 descending x request =
-  {request|descending = Just x}
-    
-
-{-| Represents a helper function to use when doing requests. If used, the request only retruns the document with the matching key.
--}
-key : DocId->
-           {a|key:Maybe DocId, keys:Maybe (List DocId), startkey:Maybe DocId, endkey:Maybe DocId }->
-           {a|key:Maybe DocId, keys:Maybe (List DocId), startkey:Maybe DocId, endkey:Maybe DocId }
-key x request =
-  {request|key = Just x, keys=Nothing, startkey=Nothing, endkey=Nothing}
-    
+  {request|descending = Just x}    
     
 {-| Represents a helper function to use when doing requests. If used, the request only retruns the documents with the list of keys.
 -}
 keys : List DocId->
-           {a|key:Maybe DocId, keys:Maybe (List DocId), startkey:Maybe DocId, endkey:Maybe DocId }->
-           {a|key:Maybe DocId, keys:Maybe (List DocId), startkey:Maybe DocId, endkey:Maybe DocId }
+           {a| keys:Maybe (List DocId), startkey:Maybe (List DocId), endkey:Maybe (List DocId) }->
+           {a| keys:Maybe (List DocId), startkey:Maybe (List DocId), endkey:Maybe (List DocId) }
 keys x request =
-  {request|keys = Just x, key=Nothing, startkey=Nothing, endkey=Nothing}
+  {request|keys = Just x, startkey=Nothing, endkey=Nothing}
   
 
 {-| Represents a JS Map/Reduce function, a JS Map function or a view name. It is used within the [QueryRequest](#QueryRequest) object.
@@ -307,14 +295,13 @@ type alias QueryRequest = { fun : JSFun
                           , include_docs : Maybe Bool
                           , conflicts : Maybe Bool
                           , attachments : Maybe  Bool
-                          , startkey : Maybe DocId
-                          , endkey : Maybe DocId
+                          , startkey : Maybe (List DocId)
+                          , endkey : Maybe (List DocId)
                           , inclusive_end : Maybe Bool
                           , limit : Maybe Int
                           , skip : Maybe Int
                           , descending : Maybe Bool
                           , groupLevel : Maybe Int               
-                          , key : Maybe DocId
                           , keys : Maybe (List DocId)
                           , stale : Maybe Stale
                           }
@@ -335,7 +322,6 @@ queryRequest fun = { fun = fun
                    , skip = Maybe.Nothing
                    , descending = Maybe.Nothing
                    , groupLevel = Maybe.Nothing
-                   , key = Maybe.Nothing
                    , keys = Maybe.Nothing
                    , stale = Maybe.Nothing
                    }

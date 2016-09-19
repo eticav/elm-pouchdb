@@ -1,6 +1,6 @@
 'use strict';
 
-var _user$project$Native_ElmPouchdbEvents = function() {
+var _powet$elm_pouchdb$Native_ElmPouchdbEvents = function() {
   
   var nativeBinding = _elm_lang$core$Native_Scheduler.nativeBinding;
   var rawSpawn = _elm_lang$core$Native_Scheduler.rawSpawn;

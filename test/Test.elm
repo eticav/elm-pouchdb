@@ -50,7 +50,7 @@ type alias Model =
   , date : Date
   , list : List Change.ChangeEvent
   }
-                 
+
 decoder : Decoder TestType
 decoder = object3 TestType
           ("_id":=Decode.string)
@@ -202,13 +202,10 @@ viewChange change =
 subscriptions : Model -> Sub Message
 subscriptions model =
   let
-    change = Change.new "1" model.db { live = True
-                                     , include_docs = True
-                                     , include_conflicts = True
-                                     , attachments = False
-                                     , descending  = False
-                                     , since = Change.Now
-                                     , limit  = Nothing } Change
+    options = Change.changeOptions
+            |> Change.since Change.Now
+               
+    change = Change.new "1" model.db options Change
              
     replicateOptions = Replicate.defaultOptions
                                     
