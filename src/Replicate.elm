@@ -9,9 +9,9 @@ effect module Replicate where { subscription = MySub }
                                 , Denied
                                 , Error )
                 , new
-                , Filter
+                , Filter (..)
                 , BackOff
-                , Live
+                , Live(..)
                 , Tagger
                 , SubId
                 , live

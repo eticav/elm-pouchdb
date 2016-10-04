@@ -12,9 +12,9 @@ effect module Change where { subscription = MySub } exposing ( ChangeOptions
                                                              , include_conflicts
                                                              , include_docs
                                                              , filter
-                                                             , ChangeEvent(Changed,Completed,Error)
-                                                             , Since(Now,Seq)
-                                                             , Filter(View,Name,Fun,Ids)
+                                                             , ChangeEvent(..)
+                                                             , Since(..)
+                                                             , Filter(..)
                                                              , new
                                                              , SubId)
 
@@ -71,7 +71,7 @@ effect module Change where { subscription = MySub } exposing ( ChangeOptions
       change
     
 # Subscription definition
-@docs new, ChangeOptions, changeOptions, ChangeEvent, Since, Filter, SubId
+@docs new, ChangeOptions, changeOptions, Fail, ChangeEvent, Since, Filter, SubId
 
 # Options Helpers functions
 @docs live, since, batch_size, return_docs, heartbeat, timeout, limit, descending, attachments, include_conflicts, include_docs, filter
@@ -99,8 +99,15 @@ import Native.ElmPouchdb exposing (changes)
 -}
 type ChangeEvent = Changed (Doc Value)
                  | Completed
-                 | Error Value
-                   
+                 | Error Fail
+
+{-| Represents the error event emitted from the database.
+-}                   
+type alias Fail = { status: Int
+                  , name: String
+                  , message: String
+                  }
+                
 type alias SubEvent = GenEffect.SubEvent ChangeEvent
 
                     

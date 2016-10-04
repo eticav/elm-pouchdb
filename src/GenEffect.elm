@@ -73,10 +73,14 @@ onEffects convert router subs state =
     (inList,idemList, outList) = splitInOut allSubs state.processes
                                        
     inTasks = spawnInList router inList idemList
-    _=List.map (\pid -> Process.kill pid) outList
+    outTasks = kill outList
   in
-    Task.map State inTasks
+    outTasks `Task.andThen` (\_->Task.map State inTasks)
 
+kill : List Platform.ProcessId ->  Task Never (List ())
+kill outList =
+  Task.sequence (List.map (\pid ->Process.kill pid) outList)
+      
 splitInOut : Dict SubId (ChangeType evt msg)->
              Processes evt msg->
            (List (ChangeType evt msg),Dict SubId (Process evt msg),List Platform.ProcessId)
@@ -131,7 +135,7 @@ insertIntoProcesses id pid tagger processes =
     val = { pid=pid
           , tagger=tagger
           }
-  in 
+  in
     Dict.insert id val processes
 
 sendToSelfChange : Platform.Router msg msg
