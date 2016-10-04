@@ -1,5 +1,5 @@
 {
-    "version": "1.0.2",
+    "version": "1.0.3",
     "summary": "Elm bindings to the great Pouchdb library.",
     "repository": "https://github.com/powet/elm-pouchdb.git",
     "license": "BSD3",
