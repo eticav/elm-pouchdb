@@ -44,7 +44,7 @@ Thanks to the Pouchdb team and Elm-lang team for their respective work on the js
 ```
 # Put, Post, Get and All_docs, Query Operations on databases
 
-All these oprations are implemented as Tasks. Below is an example for the **Put** Operation.
+All these operations are implemented as Tasks. Below is an example for the **Put** Operation.
 
 ```elm
 
