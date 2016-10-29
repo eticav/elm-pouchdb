@@ -1,25 +1,25 @@
 # elm-pouchdb
 
-Native review request was posted on the 2016-dec-09. Ref is [#200](https://github.com/elm-lang/package.elm-lang.org/issues/200) 
+Native review request was posted on the 19 September 2016. Ref is [#200](https://github.com/elm-lang/package.elm-lang.org/issues/200) 
 
-This library is a a set of [Elm](http://www.elm-lang.org/) modules that bind the functionalities of the great [pouchdb](https://pouchdb.com/) library. This library enables the user to use [Couchdb](http://couchdb.apache.org/)/[pouchdb](https://pouchdb.com/) database. It is great tool for mobile first applications, thanks to the powerfull sync feature of Couchdb comptatible databases.
+This library is a a set of [Elm](http://www.elm-lang.org/) modules that bind the functionalities of the great [pouchdb](https://pouchdb.com/) library. This library enables the user to use a [Couchdb](http://couchdb.apache.org/) or [pouchdb](https://pouchdb.com/) database. It is great tool for mobile-first applications, thanks to the powerful sync features of Couchdb-compatible databases.
 
 
 It contains:
-- **Pouchdb** module for dealing with the creation of databases and standard operations like put, post, get, all_docs and queries and many others...
-- **Change** effect module that provides subscriptions for listening to document events within the databases.
-- **Replicate** effect module that provides subscriptions for replicating one database to the another.
-- **Sync** effect module that provides subscritions for syncing one database to another.
--  **Events** effect module that provides subscritions for listening to database events.
+- **Pouchdb** A module for dealing with the creation of databases and standard operations like put, post, get, all_docs, queries and many more...
+- **Change** An effect module that provides subscriptions for listening to document events within the databases.
+- **Replicate** An effect module that provides subscriptions for replicating one database to the another.
+- **Sync** An effect module that provides subscriptions for syncing one database to another.
+-  **Events** An effect module that provides subscriptions for listening to database events.
 
 
-This library was initially created by **Etienne Cavard** for **Oriata** and posted under **BSD3 license** on the 24 july 2016.
+This library was initially created by **Etienne Cavard** for **Oriata** and posted under **BSD3 license** on the 24 July 2016.
 
 
-Thanks to the Pouchdb team and Elm-lang team for their respective work on the js [pouchdb](https://pouchdb.com/) library and the [Elm](http://www.elm-lang.org/) language.
+Thanks to the Pouchdb team and Elm-lang team for their respective work on the Javascript [pouchdb](https://pouchdb.com/) library and the [Elm](http://www.elm-lang.org/) language.
 
 
-# Declaring local and remote database
+# Declaring Local and Remote Databases
 
 ```elm
 
@@ -42,9 +42,9 @@ Thanks to the Pouchdb team and Elm-lang team for their respective work on the js
         }
         
 ```
-# Put, Post, Get and All_docs, Query Operations on databases
+# Put, Post, Get and All_docs, Query Operations on Databases
 
-All these oprations are implemented as Tasks. Below is an example for the **Put** Operation.
+All these operations are implemented as Tasks. Below is an example for the **Put** operation:
 
 ```elm
 
@@ -60,7 +60,7 @@ All these oprations are implemented as Tasks. Below is an example for the **Put*
           , ("val", Encode.string val)
           ]
     
-    -- PutButton was sent by a button, see how a put task is now send.
+    -- PutButton was sent by a button, see how a put task is now sent.
     
     update : Message -> Model -> (Model, Cmd Message)
     update msg model =
@@ -85,9 +85,9 @@ All these oprations are implemented as Tasks. Below is an example for the **Put*
 ```
 
 
-# Listening to document changes
+# Listening to Document Changes
 
-Listening to document changes is done with a subscription mecanism
+Listening to document changes is done with a subscription mechanism:
 
 ```elm
 
@@ -119,9 +119,9 @@ Listening to document changes is done with a subscription mecanism
 
 
 
-# Replicating documents from one database to another
+# Replicating Documents from one Database to Another
 
-Replication is done with a subscription mecanism
+Replication is performed using a subscription mechanism:
 
 ```elm
 
