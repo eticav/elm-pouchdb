@@ -1,6 +1,7 @@
 # elm-pouchdb
 
-Migrated to Elm 0.18 : Consequences are that elm-reactor no longer works with Pouchdb objects because Pouchdb objects cannot be displayed (crash!) in the debugger model window. Please use another workflow, I've used gulp it's pretty easy to use.
+Migrated to Elm 0.18 : Consequences are that elm-reactor no longer works with Pouchdb objects because Pouchdb objects cannot be displayed (crash!) in the debugger model window.
+Please use another workflow, I've used gulp it's pretty easy to use.
 
 Native review request was posted on the 2016-dec-09. Ref is [#200](https://github.com/elm-lang/package.elm-lang.org/issues/200) 
 
