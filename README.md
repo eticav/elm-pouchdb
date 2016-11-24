@@ -1,5 +1,7 @@
 # elm-pouchdb
 
+Migrated to Elm 0.18 : Consequences are that elm-reactor no longer works with Pouchdb objects because Pouchdb objects cannot be displayed (crash!) in the debugger model window. Please use another workflow, I've used gulp it's pretty easy to use.
+
 Native review request was posted on the 2016-dec-09. Ref is [#200](https://github.com/elm-lang/package.elm-lang.org/issues/200) 
 
 This library is a a set of [Elm](http://www.elm-lang.org/) modules that bind the functionalities of the great [pouchdb](https://pouchdb.com/) library. This library enables the user to use [Couchdb](http://couchdb.apache.org/)/[pouchdb](https://pouchdb.com/) database. It is great tool for mobile first applications, thanks to the powerfull sync feature of Couchdb comptatible databases.
