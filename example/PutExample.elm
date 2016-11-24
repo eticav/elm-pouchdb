@@ -7,7 +7,7 @@ Have Fun!
 import Pouchdb exposing (Pouchdb,auth, ajaxCache,dbOptions,db,request)
 
 import Html exposing (..)
-import Html.App as Html
+
 import String
 import Html.Events exposing (onClick)
 import Json.Encode as Encode exposing (object, Value)
@@ -21,9 +21,8 @@ init =
     (model, Cmd.none)
              
 type Message = PutButton
-             | PutError Pouchdb.Fail
-             | PutSuccess Pouchdb.Put
-               
+             | Put (Result Pouchdb.Fail Pouchdb.Put)
+             
 type alias Model = { localDb : Pouchdb
                    , returnMsg : Maybe String
                    }
@@ -33,7 +32,8 @@ initialModel =
   let
     localDb = db "Put-Example" dbOptions
   in 
-    { localDb = localDb
+    {
+      localDb = localDb
     , returnMsg = Nothing
     }
 
@@ -43,6 +43,14 @@ encoder id val =
           [ ("_id", Encode.string id)
           , ("val", Encode.string val)
           ]
+
+unpack : (e -> b) -> (a -> b) -> Result e a -> b
+unpack errFunc okFunc result =
+    case result of
+        Ok ok ->
+            okFunc ok
+        Err err ->
+            errFunc err
   
 update : Message -> Model -> (Model, Cmd Message)
 update msg model =
@@ -50,18 +58,16 @@ update msg model =
     PutButton->
       let 
         task = (Pouchdb.put model.localDb (encoder "id2" "hello") Nothing)
-        cmd = Task.perform PutError PutSuccess task
+        cmd = Task.attempt Put task
       in
-        (model,cmd)
-    PutSuccess msg->
-      let 
-        newMsg = String.append "Successfully put in db with rev = " msg.rev
-      in
-        ({model|returnMsg=Just newMsg}, Cmd.none)
-    PutError msg->
+        (model, cmd)
+    Put msg->
       let
-        newMsg = String.append "Error putting in db with message = " msg.message
-      in
+        newMsg = unpack                 
+                 (\m->String.append "Error putting in db with message = " m.message)
+                 (\m->String.append "Successfully put in db with rev = " m.rev)
+                  msg
+       in
         ({model|returnMsg=Just newMsg}, Cmd.none)
   
 view : Model -> Html Message
@@ -69,7 +75,8 @@ view model =
   div
     [ ]
     [ button [ onClick PutButton] [ text "Put"]
-    , viewMsg model]
+    , viewMsg model
+    ]
 
 viewMsg model =
   case model.returnMsg of
@@ -85,7 +92,8 @@ viewMsg model =
 subscriptions : Model -> Sub Message
 subscriptions model =
   Sub.none
-           
+
+main : Program Never Model Message
 main =  
   Html.program
         { init = init

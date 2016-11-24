@@ -8,11 +8,10 @@ Have Fun!
 import Pouchdb exposing (Pouchdb,auth, ajaxCache,dbOptions,db,request)
 
 import Html exposing (..)
-import Html.App as Html
 import String
 import Html.Events exposing (onClick)
 import Json.Encode as Encode exposing (object, Value)
-import Json.Decode as Decode exposing (Decoder,(:=),string, object2)
+import Json.Decode as Decode exposing (Decoder,field,string, map2)
 import Task exposing (Task)
 
 init : (Model, Cmd Message)
@@ -20,18 +19,16 @@ init =
   let
     model = initialModel
     task = (Pouchdb.put model.localDb (encoder "id3" "You got me!") Nothing)
-    cmd = Task.perform PutError PutSuccess task
+    cmd = Task.attempt Put task
   in 
     (model, cmd)
 
 type alias DocModel = { id :String
                       , val : String }
     
-type Message = PutButton
-             | PutError Pouchdb.Fail
-             | PutSuccess Pouchdb.Put
-             | GetSuccess (Pouchdb.Doc DocModel)
-             | GetError Pouchdb.Fail
+type Message = GetButton
+             | Put (Result Pouchdb.Fail Pouchdb.Put)
+             | Get (Result Pouchdb.Fail (Pouchdb.Doc DocModel))             
                
 type alias Model = { localDb : Pouchdb
                    , doc : Maybe DocModel
@@ -53,41 +50,48 @@ encoder id val =
           , ("val", Encode.string val)
           ]
 decoder : Decoder DocModel
-decoder = object2 DocModel
-          ("_id":=Decode.string)
-          ("val":=Decode.string)
+decoder = map2 DocModel
+          (field "_id" Decode.string)
+          (field "val" Decode.string)
+
+unpack : (e -> b) -> (a -> b) -> Result e a -> b
+unpack errFunc okFunc result =
+    case result of
+        Ok ok ->
+            okFunc ok
+        Err err ->
+            errFunc err
 
 update : Message -> Model -> (Model, Cmd Message)
 update msg model =
   case msg of
-    PutButton->
+    GetButton->
       let
         req= Pouchdb.request "id3" Nothing
              |> Pouchdb.conflicts True
         -- Conflicts option not usefull here, but just a show case!
         task = Pouchdb.get model.localDb decoder req
-        cmd = Task.perform GetError GetSuccess task
+        cmd = Task.attempt Get task
       in
         (model,cmd)
-    PutSuccess msg->
+    Put msg->
       (model, Cmd.none)
-    PutError msg->
-      (model, Cmd.none)
-    GetSuccess msg->
-      case msg.doc of
-        Just doc ->
-          ({model|doc = Just doc}, Cmd.none)
-        Nothing ->
-          (model, Cmd.none)
-    GetError msg->
-      -- handle fail here
-      (model, Cmd.none)
+    Get msg->
+      let
+        onFail m = (model, Cmd.none)
+        onSuccess m = case m.doc of
+                     Just doc ->
+                       ({model|doc = Just doc}, Cmd.none)
+                     Nothing ->
+                       (model, Cmd.none)
+      in
+        unpack onFail onSuccess msg 
   
 view : Model -> Html Message
 view model =
   div
     [ ]
-    [ button [ onClick PutButton] [ text "Put"]
+    [ button [ onClick GetButton] [ text "Get"]
     , viewMsg model]
 
 viewMsg model =
@@ -112,5 +116,3 @@ main =
         , view = view
         , subscriptions = subscriptions
         }
-
-

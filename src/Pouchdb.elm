@@ -680,7 +680,7 @@ Full code available in Example/GetExample.elm
 -}  
 get : Pouchdb->Json.Decoder value-> DocRequest -> Task Fail (Doc value)
 get db decoder req =
-  Native.ElmPouchdb.get db req `andThen` (decode decoder)
+  Native.ElmPouchdb.get db req |> andThen (decode decoder)
 
 
 {-| internal decode helper function.

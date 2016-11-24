@@ -8,11 +8,10 @@ import Pouchdb exposing (Pouchdb,auth, ajaxCache,dbOptions,db)
 import Change exposing (..)
 
 import Html exposing (..)
-import Html.App as Html
 import String
 import Html.Events exposing (onClick)
 import Json.Encode as Encode exposing (object, Value)
-import Json.Decode as Decode exposing (Decoder,(:=),string, object2)
+import Json.Decode as Decode exposing (Decoder,field,string, map2)
 import Task exposing (Task)
 
 init : (Model, Cmd Message)
@@ -23,8 +22,7 @@ init =
     (model, Cmd.none)
              
 type Message = PutButton
-             | PutError Pouchdb.Fail
-             | PutSuccess Pouchdb.Put
+             | Put (Result Pouchdb.Fail Pouchdb.Put)
              | Change Change.ChangeEvent
 
 type alias DocModel = { id :String
@@ -50,9 +48,9 @@ encoder val =
           ]
 
 decoder : Decoder DocModel
-decoder = object2 DocModel
-          ("_id":=Decode.string)
-          ("val":=Decode.string)
+decoder = map2 DocModel
+          (field "_id" Decode.string)
+          (field "val" Decode.string)
             
 update : Message -> Model -> (Model, Cmd Message)
 update msg model =
@@ -60,12 +58,10 @@ update msg model =
     PutButton->
       let 
         task = (Pouchdb.post model.localDb (encoder "Bonjour Monde!"))
-        cmd = Task.perform PutError PutSuccess task
+        cmd = Task.attempt Put task
       in
         (model,cmd)
-    PutSuccess msg->
-      (model,Cmd.none)
-    PutError msg->
+    Put msg->
       (model,Cmd.none)
     Change evt->
       case evt of

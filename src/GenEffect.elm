@@ -47,7 +47,7 @@ onSelfMsg : Platform.Router msg msg ->
             Task Never (State evt msg)
 onSelfMsg router msg state =
   Platform.sendToApp router msg
-            `Task.andThen` \_ ->Task.succeed state
+            |> Task.andThen (\_ ->Task.succeed state)
 
 call : NativeStart evt->
        (SubEvent evt ->Task Never ())->
@@ -75,7 +75,7 @@ onEffects convert router subs state =
     inTasks = spawnInList router inList idemList
     outTasks = kill outList
   in
-    outTasks `Task.andThen` (\_->Task.map State inTasks)
+    outTasks |> Task.andThen (\_->Task.map State inTasks)
 
 kill : List Platform.ProcessId ->  Task Never (List ())
 kill outList =
@@ -126,8 +126,8 @@ spawnInList router inList idemList=
       Task.succeed idemList
     head::rest ->
       Process.spawn (call head.native (sendToSelfChange router head.tagger))
-               `Task.andThen` \pid ->
-                 spawnInList router rest (insertIntoProcesses head.id pid head.tagger idemList)
+               |> Task.andThen (\pid ->
+                 spawnInList router rest (insertIntoProcesses head.id pid head.tagger idemList))
 
 insertIntoProcesses : SubId -> Platform.ProcessId -> Tagger evt msg -> (Processes evt msg) -> (Processes evt msg)
 insertIntoProcesses id pid tagger processes =

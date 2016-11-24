@@ -1,0 +1,33 @@
+{
+  "name": "elm-pouchdb",
+  "version": "1.0.3",
+  "description": "Native review request was posted on the 2016-dec-09. Ref is [#200](https://github.com/elm-lang/package.elm-lang.org/issues/200)",
+  "main": "README.md",
+  "directories": {
+    "example": "example",
+    "test": "test"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "del": "^2.2.2",
+    "gulp": "^3.9.1",
+    "gulp-connect": "^5.0.0",
+    "gulp-elm": "^0.6.1",
+    "gulp-plumber": "^1.1.0",
+    "gulp-util": "^3.0.7"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@bitbucket.org/ecavard-oriata/elm-pouchdb.git"
+  },
+  "keywords": [
+    "pouchdb",
+    "elm"
+  ],
+  "author": "Etienne Cavard",
+  "license": "ISC",
+  "homepage": "https://bitbucket.org/ecavard-oriata/elm-pouchdb#readme"
+}

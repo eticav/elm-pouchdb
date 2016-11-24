@@ -7,3 +7,5 @@ main.js
 main.html
 index.html
 *~
+dist
+node_modules

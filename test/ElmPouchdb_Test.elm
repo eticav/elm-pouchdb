@@ -1,17 +1,18 @@
-module Main exposing (..)
+module ElmPouchdb_Test exposing (..)
+
 
 import Basics exposing (..)
-import ElmTest exposing (..)
+import Test exposing (..)
 import Pouchdb exposing (..)
 import Change
 import Replicate
 import Sync
 import Events
 import Json.Encode as Encode exposing (object, string, Value)
-import Json.Decode as Decode exposing (Decoder,(:=),string, object3)
+import Json.Decode as Decode exposing (Decoder,field,string, map3)
 
 import Html exposing (..)
-import Html.App as Html
+
 import Date exposing (..)
 import Task exposing (Task,perform)
 
@@ -52,10 +53,10 @@ type alias Model =
   }
 
 decoder : Decoder TestType
-decoder = object3 TestType
-          ("_id":=Decode.string)
-          ("_rev":=Decode.string)
-          ("val":=Decode.string)
+decoder = map3 TestType
+          (field "_id" Decode.string)
+          (field "_rev" Decode.string)
+          (field "val" Decode.string)
 
 encoder : String->String->Encode.Value
 encoder id val =
