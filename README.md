@@ -49,8 +49,7 @@ All these oprations are implemented as Tasks. Below is an example for the **Put*
 ```elm
 
     type Message = PutButton
-                 | PutError Pouchdb.Fail
-                 | PutSuccess Pouchdb.Put
+                 | Put (Result Pouchdb.Fail Pouchdb.Put)
 
     -- a bit of encoding
     encoder : String->String->Encode.Value
@@ -71,16 +70,15 @@ All these oprations are implemented as Tasks. Below is an example for the **Put*
             cmd = Task.perform PutError PutSuccess task
           in
            (model,cmd)
-        PutSuccess msg->
-          let 
-            newMsg = String.append "Successfully put in db with rev = " msg.rev
+        Put msg->
+          let
+            newMsg = unpack
+                 (\m->String.append "Error putting in db with message = " m.message)
+                 (\m->String.append "Successfully put in db with rev = " m.rev)
+                  msg
           in
             ({model|returnMsg=Just newMsg}, Cmd.none)
-        PutError msg->
-          let
-            newMsg = String.append "Error putting in db with message = " msg.message
-          in
-           ({model|returnMsg=Just newMsg}, Cmd.none)
+
         
 ```
 
